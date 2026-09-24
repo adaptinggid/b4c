@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum CreatorStatus {
+  PENDING
+  APPROVED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+
+  creatorProfile CreatorProfile?
+  xpTransactions XPTransaction[]
+}
+
+model CreatorProfile {
+  id               String        @id @default(cuid())
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String        @unique
+
+  displayName      String
+  photoUrl         String?
+  bio              String
+  country          String
+  category         String
+  skills           String[]      @default([])
+  lightningAddress String
+  participant      Boolean       @default(false)
+  collaboration    Boolean       @default(false)
+  status           CreatorStatus @default(PENDING)
+
+  website          String?
+  x                String?
+  instagram        String?
+  linkedin         String?
+  github           String?
+  telegram         String?
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  projects         Project[]
+
+  @@index([category])
+  @@index([status])
+}
+
+model Project {
+  id                String        @id @default(cuid())
+  creator           CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId         String
+
+  title             String
+  category          String
+  description       String
+  coverUrl          String?
+  link              String?
+  tags              String[]      @default([])
+  story             String?
+  collaborators     String?
+  collabRequest     Boolean       @default(false)
+  bitcoinConnection String
+  status            ProjectStatus @default(PENDING)
+  featured          Boolean       @default(false)
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  xpTransactions    XPTransaction[]
+
+  @@index([category])
+  @@index([status])
+  @@index([creatorId])
+}
+
+model XPTransaction {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+}
