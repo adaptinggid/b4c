@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LightningBox } from "@/components/LightningBox";
+import { SafeImage } from "@/components/SafeImage";
 import { XPButtons } from "./XPButtons";
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +35,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       project.coverUrl.endsWith(".mp4") ||
       project.coverUrl.endsWith(".txt") ||
       project.coverUrl.endsWith(".md"));
+
+  const fallbackCategoryBox = (
+    <div
+      className="detail-cover"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--ink-soft)",
+        marginBottom: 22,
+        fontFamily: "Fraunces, serif",
+      }}
+    >
+      {project.category}
+    </div>
+  );
 
   return (
     <section className="section" style={{ paddingTop: 44 }}>
@@ -89,23 +106,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                   </a>
                 </div>
               ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={project.coverUrl} className="detail-cover" style={{ marginBottom: 22 }} alt="" />
+                <SafeImage
+                  src={project.coverUrl}
+                  alt={project.title}
+                  className="detail-cover"
+                  style={{ marginBottom: 22 }}
+                  fallback={fallbackCategoryBox}
+                />
               )
             ) : (
-              <div
-                className="detail-cover"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--ink-soft)",
-                  marginBottom: 22,
-                  fontFamily: "Fraunces, serif",
-                }}
-              >
-                {project.category}
-              </div>
+              fallbackCategoryBox
             )}
 
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)" }}>{project.description}</p>
@@ -149,12 +159,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="side-card">
               <div className="profile-header" style={{ alignItems: "center", gap: 14 }}>
-                {project.creator.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={project.creator.photoUrl} className="avatar" alt="" />
-                ) : (
-                  <div className="avatar avatar-fallback">{project.creator.displayName.charAt(0)}</div>
-                )}
+                <SafeImage
+                  src={project.creator.photoUrl}
+                  alt={project.creator.displayName}
+                  className="avatar"
+                  fallback={
+                    <div className="avatar avatar-fallback">{project.creator.displayName.charAt(0)}</div>
+                  }
+                />
                 <div>
                   <div style={{ fontWeight: 600 }}>{project.creator.displayName}</div>
                   <div style={{ fontSize: ".8rem", color: "var(--ink-soft)" }}>{project.creator.category}</div>

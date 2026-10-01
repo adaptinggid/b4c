@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SafeImage } from "./SafeImage";
 
 export type CreatorCardData = {
   id: string;
@@ -12,6 +13,12 @@ export type CreatorCardData = {
 };
 
 export function CreatorCard({ c }: { c: CreatorCardData }) {
+  const avatarFallback = (
+    <div className="avatar avatar-lg avatar-fallback" style={{ fontSize: "1.6rem" }}>
+      {c.displayName.charAt(0)}
+    </div>
+  );
+
   return (
     <Link href={`/profile/${c.id}`} className="card">
       <div
@@ -25,12 +32,14 @@ export function CreatorCard({ c }: { c: CreatorCardData }) {
         }}
       >
         {c.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.photoUrl} alt="" className="avatar avatar-lg" />
+          <SafeImage
+            src={c.photoUrl}
+            alt={c.displayName}
+            className="avatar avatar-lg"
+            fallback={avatarFallback}
+          />
         ) : (
-          <div className="avatar avatar-lg avatar-fallback" style={{ fontSize: "1.6rem" }}>
-            {c.displayName.charAt(0)}
-          </div>
+          avatarFallback
         )}
       </div>
       <div className="card-body">

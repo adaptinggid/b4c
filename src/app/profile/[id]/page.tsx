@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LightningBox } from "@/components/LightningBox";
 import { ProjectCard } from "@/components/ProjectCard";
+import { SafeImage } from "@/components/SafeImage";
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,18 +31,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const others = projects.filter((p) => p.status !== "PUBLISHED");
   const xpTotal = projects.reduce((s, p) => s + p.xpTotal, 0);
 
+  const avatarFallback = (
+    <div className="avatar avatar-xl avatar-fallback" style={{ fontSize: "2.4rem" }}>
+      {creator.displayName.charAt(0)}
+    </div>
+  );
+
   return (
     <section className="section" style={{ paddingTop: 48 }}>
       <div className="wrap">
         <div className="profile-header">
-          {creator.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={creator.photoUrl} className="avatar avatar-xl" alt="" />
-          ) : (
-            <div className="avatar avatar-xl avatar-fallback" style={{ fontSize: "2.4rem" }}>
-              {creator.displayName.charAt(0)}
-            </div>
-          )}
+          <SafeImage
+            src={creator.photoUrl}
+            alt={creator.displayName}
+            className="avatar avatar-xl"
+            fallback={avatarFallback}
+          />
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 style={{ fontSize: "2rem", margin: 0 }}>{creator.displayName}</h1>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SafeImage } from "./SafeImage";
 
 export type ProjectCardData = {
   id: string;
@@ -11,27 +12,40 @@ export type ProjectCardData = {
 };
 
 export function ProjectCard({ p }: { p: ProjectCardData }) {
+  const isNonImage =
+    !!p.coverUrl &&
+    (p.coverUrl.endsWith(".pdf") ||
+      p.coverUrl.endsWith(".zip") ||
+      p.coverUrl.endsWith(".mp3") ||
+      p.coverUrl.endsWith(".mp4") ||
+      p.coverUrl.endsWith(".txt") ||
+      p.coverUrl.endsWith(".md"));
+
+  const fallbackBox = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--ink-soft)",
+        fontFamily: "Fraunces, serif",
+        fontSize: ".85rem",
+        background: "var(--bg-subtle, #f5f5f5)",
+      }}
+    >
+      {p.category}
+    </div>
+  );
+
   return (
     <Link href={`/project/${p.id}`} className="card">
       <div className="card-media">
-        {p.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.coverUrl} alt="" />
+        {p.coverUrl && !isNonImage ? (
+          <SafeImage src={p.coverUrl} alt={p.title} fallback={fallbackBox} />
         ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--ink-soft)",
-              fontFamily: "Fraunces, serif",
-              fontSize: ".85rem",
-            }}
-          >
-            {p.category}
-          </div>
+          fallbackBox
         )}
       </div>
       <div className="card-body">

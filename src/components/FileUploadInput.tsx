@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SafeImage } from "./SafeImage";
 
 interface FileUploadInputProps {
   label: string;
@@ -9,6 +10,60 @@ interface FileUploadInputProps {
   accept?: string;
   hint?: string;
   optional?: boolean;
+}
+
+// Client-side image compression & optimization helper
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.type.includes("svg") || file.size < 150000) {
+    return file; // Skip small images, SVGs, or non-images
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      const maxDim = 1200;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webp"), {
+              type: "image/webp",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        },
+        "image/webp",
+        0.82
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
 }
 
 export function FileUploadInput({
@@ -29,12 +84,14 @@ export function FileUploadInput({
       value.startsWith("data:image/") ||
       (!value.endsWith(".pdf") && !value.endsWith(".zip") && !value.endsWith(".mp3") && !value.endsWith(".mp4")));
 
-  async function handleFileChange(file: File) {
+  async function handleFileChange(rawFile: File) {
     setUploading(true);
     setError("");
     try {
+      const fileToUpload = await compressImage(rawFile);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", fileToUpload);
+
       const res = await fetch("/api/upload", { method: "POST", body: form });
       const data = await res.json();
       setUploading(false);
@@ -63,16 +120,30 @@ export function FileUploadInput({
         <div style={{ marginBottom: 12 }}>
           {isImage ? (
             <div style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SafeImage
                 src={value}
                 alt="Upload preview"
                 className="detail-cover"
                 style={{ maxHeight: 200, objectFit: "cover", borderRadius: 8, display: "block", marginBottom: 8 }}
-                onError={(e) => {
-                  // Fallback if image fails to render
-                  (e.target as HTMLElement).style.display = "none";
-                }}
+                fallback={
+                  <div
+                    className="detail-cover"
+                    style={{
+                      maxHeight: 140,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--ink-soft)",
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      border: "1px dashed var(--border, #ccc)",
+                      padding: 16,
+                      fontSize: ".85rem",
+                    }}
+                  >
+                    Image link invalid or unavailable. Upload a new image below.
+                  </div>
+                }
               />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <label className="btn btn-outline btn-sm" style={{ cursor: "pointer", margin: 0 }}>
@@ -133,7 +204,7 @@ export function FileUploadInput({
         <div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <label className="btn btn-outline btn-sm" style={{ cursor: "pointer", margin: 0 }}>
-              {uploading ? "Uploading file…" : "Choose file to upload"}
+              {uploading ? "Optimizing & uploading…" : "Choose file to upload"}
               <input
                 type="file"
                 accept={accept}
@@ -152,7 +223,7 @@ export function FileUploadInput({
           </div>
 
           <div className="hint" style={{ marginTop: 6 }}>
-            {uploading ? "Uploading your file…" : hint}
+            {uploading ? "Compressing and uploading image…" : hint}
           </div>
         </div>
       )}
@@ -161,7 +232,7 @@ export function FileUploadInput({
         <input
           className="input"
           style={{ marginTop: 8 }}
-          placeholder="https://… or /uploads/…"
+          placeholder="https://… or data:image/…"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
