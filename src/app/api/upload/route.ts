@@ -82,12 +82,17 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ url: blob.url, name: file.name, size: file.size, type: file.type }, { status: 201 });
     } catch (err) {
-      console.warn("Vercel Blob upload failed, falling back:", err);
+      console.warn("Vercel Blob upload failed, attempting fallback:", err);
     }
   }
 
-  // 2. Try saving to local disk (works in standard local environment where filesystem is writable)
-  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  // 2. Try saving to local disk ONLY in local development (not on Vercel / serverless)
+  const isServerless =
+    !!process.env.VERCEL ||
+    !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NODE_ENV === "production" ||
+    process.cwd().startsWith("/var/task");
+
   if (!isServerless) {
     try {
       const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -109,7 +114,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // 3. Fallback for Vercel Serverless environment when Vercel Blob token is not set: Data URL
+  // 3. Guaranteed fallback for Vercel / Production environment: Data URL
   try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
