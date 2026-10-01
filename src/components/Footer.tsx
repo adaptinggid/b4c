@@ -30,6 +30,11 @@ export function Footer() {
               <Link href="/support">Support</Link>
             </div>
             <div className="footer-col">
+              <h5>Legal &amp; Policy</h5>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+            </div>
+            <div className="footer-col">
               <h5>BitEdu Network</h5>
               <a href={BITEDU_X} target="_blank" rel="noopener noreferrer">
                 X / Twitter ↗
@@ -42,7 +47,11 @@ export function Footer() {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} BitEdu Network. Creators retain ownership of their work.</span>
+          <span>
+            © {new Date().getFullYear()} BitEdu Network. Creators retain ownership of their work. ·{" "}
+            <Link href="/terms" style={{ textDecoration: "underline" }}>Terms</Link> ·{" "}
+            <Link href="/privacy" style={{ textDecoration: "underline" }}>Privacy</Link>
+          </span>
           <span style={{ opacity: 0.7 }}>Proof of Work — built by creatives, for creatives.</span>
         </div>
       </div>

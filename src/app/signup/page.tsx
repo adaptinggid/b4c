@@ -64,7 +64,12 @@ export default function SignUpPage() {
           <button className="btn btn-primary btn-block" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </button>
-          <p className="help-note">
+          <p className="help-note" style={{ textAlign: "center", fontSize: ".82rem", color: "var(--ink-soft)", marginTop: 12 }}>
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" style={{ textDecoration: "underline" }}>Terms of Service</Link> and{" "}
+            <Link href="/privacy" style={{ textDecoration: "underline" }}>Privacy Policy</Link>.
+          </p>
+          <p className="help-note" style={{ textAlign: "center", marginTop: 8 }}>
             Already have an account? <Link href="/signin" style={{ textDecoration: "underline" }}>Sign in</Link>.
           </p>
         </form>
