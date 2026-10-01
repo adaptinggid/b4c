@@ -57,6 +57,9 @@ export function ProjectRow({
       </td>
       <td>{xp}</td>
       <td style={{ whiteSpace: "nowrap" }}>
+        <Link href={`/project/${id}/edit`} className="btn btn-sm btn-outline" style={{ marginRight: 4 }}>
+          Edit
+        </Link>
         {status !== "PUBLISHED" && (
           <button className="btn btn-sm btn-outline" disabled={busy} onClick={() => setStatus("PUBLISHED")}>
             Publish

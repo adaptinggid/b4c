@@ -19,26 +19,79 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   if (!project) notFound();
 
-  const isMine = session?.user && project.creator.userId === session.user.id;
+  const isMine = !!session?.user && project.creator.userId === session.user.id;
   const isAdmin = session?.user?.role === "ADMIN";
   if (project.status !== "PUBLISHED" && !isMine && !isAdmin) notFound();
 
   const xpTotal = project.xpTransactions.reduce((s, t) => s + t.amount, 0);
   const alreadyVoted = session?.user ? project.xpTransactions.some((t) => t.userId === session.user.id) : false;
 
+  const isNonImageCover =
+    !!project.coverUrl &&
+    (project.coverUrl.endsWith(".pdf") ||
+      project.coverUrl.endsWith(".zip") ||
+      project.coverUrl.endsWith(".mp3") ||
+      project.coverUrl.endsWith(".mp4") ||
+      project.coverUrl.endsWith(".txt") ||
+      project.coverUrl.endsWith(".md"));
+
   return (
     <section className="section" style={{ paddingTop: 44 }}>
       <div className="wrap">
-        <Link href="/discover" style={{ fontSize: ".85rem", color: "var(--ink-soft)" }}>
-          ← Back to discover
-        </Link>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <Link href="/discover" style={{ fontSize: ".85rem", color: "var(--ink-soft)" }}>
+            ← Back to discover
+          </Link>
+
+          {(isMine || isAdmin) && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span className={`status-tag st-${project.status}`}>
+                {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
+              </span>
+              <Link href={`/project/${project.id}/edit`} className="btn btn-outline btn-sm">
+                ✏️ Edit project
+              </Link>
+            </div>
+          )}
+        </div>
+
         <div style={{ marginTop: 18 }} className="detail-hero">
           <div>
             <span className="card-cat">{project.category}</span>
             <h1 style={{ fontSize: "2.1rem", margin: "6px 0 14px" }}>{project.title}</h1>
+
             {project.coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={project.coverUrl} className="detail-cover" style={{ marginBottom: 22 }} alt="" />
+              isNonImageCover ? (
+                <div
+                  className="detail-cover"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    marginBottom: 22,
+                    padding: 24,
+                    background: "var(--bg-subtle, #f9f9f9)",
+                    border: "1px dashed var(--border, #ccc)",
+                    borderRadius: 8,
+                  }}
+                >
+                  <span style={{ fontSize: "2rem" }}>📄</span>
+                  <div style={{ fontWeight: 600 }}>Attached Project File</div>
+                  <a
+                    href={project.coverUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary btn-sm"
+                  >
+                    View / Download Attachment ↗
+                  </a>
+                </div>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={project.coverUrl} className="detail-cover" style={{ marginBottom: 22 }} alt="" />
+              )
             ) : (
               <div
                 className="detail-cover"
@@ -54,6 +107,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 {project.category}
               </div>
             )}
+
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)" }}>{project.description}</p>
             {project.story && (
               <>
@@ -83,13 +137,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 <a href={project.link} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
                   View the work ↗
                 </a>
-              </div>
-            )}
-            {isMine && (
-              <div style={{ marginTop: 26 }}>
-                <span className={`status-tag st-${project.status}`}>
-                  {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
-                </span>
               </div>
             )}
           </div>

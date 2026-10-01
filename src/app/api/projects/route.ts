@@ -9,7 +9,7 @@ const schema = z.object({
   category: z.enum(CATEGORIES),
   description: z.string().min(1).max(600),
   bitcoinConnection: z.string().min(1).max(600),
-  coverUrl: z.string().url().optional().or(z.literal("")).optional(),
+  coverUrl: z.string().trim().max(1000).optional().or(z.literal("")).optional(),
   link: z.string().optional(),
   tags: z.array(z.string()).max(15).default([]),
   story: z.string().max(2000).optional(),

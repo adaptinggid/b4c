@@ -2,23 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Project } from "@prisma/client";
 import { CATEGORIES } from "@/lib/constants";
 import { FileUploadInput } from "@/components/FileUploadInput";
 
-export function UploadForm() {
+export function ProjectEditForm({ project }: { project: Project }) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [link, setLink] = useState("");
-  const [tags, setTags] = useState("");
-  const [story, setStory] = useState("");
-  const [bitcoinConnection, setBitcoinConnection] = useState("");
-  const [collaborators, setCollaborators] = useState("");
-  const [collabRequest, setCollabRequest] = useState(false);
-  const [coverUrl, setCoverUrl] = useState("");
+  const [title, setTitle] = useState(project.title ?? "");
+  const [category, setCategory] = useState(project.category ?? "");
+  const [description, setDescription] = useState(project.description ?? "");
+  const [link, setLink] = useState(project.link ?? "");
+  const [tags, setTags] = useState(project.tags ? project.tags.join(", ") : "");
+  const [story, setStory] = useState(project.story ?? "");
+  const [bitcoinConnection, setBitcoinConnection] = useState(project.bitcoinConnection ?? "");
+  const [collaborators, setCollaborators] = useState(project.collaborators ?? "");
+  const [collabRequest, setCollabRequest] = useState(project.collabRequest ?? false);
+  const [coverUrl, setCoverUrl] = useState(project.coverUrl ?? "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,8 +30,8 @@ export function UploadForm() {
       return;
     }
     setLoading(true);
-    const res = await fetch("/api/projects", {
-      method: "POST",
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
@@ -47,10 +49,24 @@ export function UploadForm() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error || "Something went wrong.");
+      setError(data.error || "Failed to update project.");
       return;
     }
-    router.push(`/project/${data.project.id}`);
+    router.push(`/project/${project.id}`);
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Failed to delete project.");
+      return;
+    }
+    router.push("/discover");
     router.refresh();
   }
 
@@ -59,11 +75,11 @@ export function UploadForm() {
       {error && <p className="error-text">{error}</p>}
 
       <FileUploadInput
-        label="Cover image or attachment"
+        label="Cover image or project attachment"
         value={coverUrl}
         onChange={setCoverUrl}
         accept="image/*,application/pdf,.pdf,.zip,audio/*,video/*"
-        hint="Upload an image, PDF, audio, video or project file, or paste a URL."
+        hint="Upload a new cover image or file attachment, or paste a URL."
         optional
       />
 
@@ -148,10 +164,14 @@ export function UploadForm() {
       </div>
 
       <div className="divider" />
-      <button className="btn btn-primary btn-block" disabled={loading}>
-        {loading ? "Submitting…" : "Submit for review"}
-      </button>
-      <p className="help-note">Your work will show as Pending Review until an admin publishes it.</p>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <button className="btn btn-primary" style={{ flex: 1 }} disabled={loading || deleting}>
+          {loading ? "Saving changes…" : "Save changes"}
+        </button>
+        <button type="button" className="btn btn-danger" disabled={loading || deleting} onClick={handleDelete}>
+          {deleting ? "Deleting…" : "Delete project"}
+        </button>
+      </div>
     </form>
   );
 }

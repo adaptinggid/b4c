@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CreatorProfile } from "@prisma/client";
 import { CATEGORIES, SKILL_OPTIONS } from "@/lib/constants";
+import { FileUploadInput } from "@/components/FileUploadInput";
 
 export function ProfileForm({ existing }: { existing: CreatorProfile | null }) {
   const router = useRouter();
@@ -16,7 +17,6 @@ export function ProfileForm({ existing }: { existing: CreatorProfile | null }) {
   const [participant, setParticipant] = useState(existing?.participant ?? false);
   const [collaboration, setCollaboration] = useState(existing?.collaboration ?? false);
   const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? "");
-  const [uploading, setUploading] = useState(false);
   const [website, setWebsite] = useState(existing?.website ?? "");
   const [x, setX] = useState(existing?.x ?? "");
   const [instagram, setInstagram] = useState(existing?.instagram ?? "");
@@ -28,21 +28,6 @@ export function ProfileForm({ existing }: { existing: CreatorProfile | null }) {
 
   function toggleSkill(s: string) {
     setSkills((prev) => (prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]));
-  }
-
-  async function handlePhotoUpload(file: File) {
-    setUploading(true);
-    setError("");
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: form });
-    const data = await res.json();
-    setUploading(false);
-    if (!res.ok) {
-      setError(data.error || "Upload failed");
-      return;
-    }
-    setPhotoUrl(data.url);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -90,29 +75,14 @@ export function ProfileForm({ existing }: { existing: CreatorProfile | null }) {
     <form onSubmit={onSubmit} className="form-card">
       {error && <p className="error-text">{error}</p>}
 
-      <div className="field">
-        <label>
-          Profile photo <span className="opt">optional</span>
-        </label>
-        {photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="avatar avatar-lg" style={{ marginBottom: 10 }} />
-        )}
-        <input
-          className="input"
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])}
-        />
-        <div className="hint">{uploading ? "Uploading…" : "Or paste an image URL below."}</div>
-        <input
-          className="input"
-          style={{ marginTop: 8 }}
-          placeholder="https://…"
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
-        />
-      </div>
+      <FileUploadInput
+        label="Profile photo"
+        value={photoUrl}
+        onChange={setPhotoUrl}
+        accept="image/*"
+        hint="Upload a profile photo or paste an image URL."
+        optional
+      />
 
       <div className="field">
         <label>
@@ -243,7 +213,7 @@ export function ProfileForm({ existing }: { existing: CreatorProfile | null }) {
       </div>
 
       <div className="divider" />
-      <button className="btn btn-primary btn-block" disabled={loading || uploading}>
+      <button className="btn btn-primary btn-block" disabled={loading}>
         {loading ? "Saving…" : existing ? "Save changes" : "Save profile"}
       </button>
       {!existing && (
