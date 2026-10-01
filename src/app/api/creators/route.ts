@@ -13,7 +13,7 @@ const schema = z.object({
   lightningAddress: z.string().min(3).max(160),
   participant: z.boolean().default(false),
   collaboration: z.boolean().default(false),
-  photoUrl: z.string().trim().max(1000).optional().or(z.literal("")).optional(),
+  photoUrl: z.string().trim().max(15000000).optional().or(z.literal("")).optional(),
   website: z.string().optional(),
   x: z.string().optional(),
   instagram: z.string().optional(),

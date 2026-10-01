@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import path from "path";
 import fs from "fs";
 
-const MAX_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 const ALLOWED_TYPES = [
   // Images
@@ -47,7 +47,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  // Allow any standard image, document, audio, video or zip file
   const fileType = file.type || "application/octet-stream";
   const isAllowed =
     ALLOWED_TYPES.includes(fileType) ||
@@ -67,9 +66,10 @@ export async function POST(req: Request) {
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "File is larger than 20MB" }, { status: 400 });
+    return NextResponse.json({ error: "File is larger than 10MB" }, { status: 400 });
   }
 
+  // 1. Try Vercel Blob if a valid read/write token is configured
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   const isVercelBlobConfigured = typeof token === "string" && token.startsWith("vercel_blob_rw_");
 
@@ -82,29 +82,44 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ url: blob.url, name: file.name, size: file.size, type: file.type }, { status: 201 });
     } catch (err) {
-      console.warn("Vercel Blob upload failed, falling back to local file storage:", err);
+      console.warn("Vercel Blob upload failed, falling back:", err);
     }
   }
 
-  // Fall back to local file storage under public/uploads
-  try {
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+  // 2. Try saving to local disk (works in standard local environment where filesystem is writable)
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  if (!isServerless) {
+    try {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
 
-    const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const filePath = path.join(uploadsDir, safeName);
+      const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const filePath = path.join(uploadsDir, safeName);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      fs.writeFileSync(filePath, buffer);
+
+      const publicUrl = `/uploads/${safeName}`;
+      return NextResponse.json({ url: publicUrl, name: file.name, size: file.size, type: file.type }, { status: 201 });
+    } catch (err) {
+      console.warn("Local disk write failed, falling back to Data URL:", err);
+    }
+  }
+
+  // 3. Fallback for Vercel Serverless environment when Vercel Blob token is not set: Data URL
+  try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${fileType};base64,${base64}`;
 
-    fs.writeFileSync(filePath, buffer);
-
-    const publicUrl = `/uploads/${safeName}`;
-    return NextResponse.json({ url: publicUrl, name: file.name, size: file.size, type: file.type }, { status: 201 });
+    return NextResponse.json({ url: dataUrl, name: file.name, size: file.size, type: file.type }, { status: 201 });
   } catch (err: unknown) {
-    console.error("Local file upload error:", err);
-    const message = err instanceof Error ? err.message : "Failed to save file";
+    console.error("Data URL upload fallback error:", err);
+    const message = err instanceof Error ? err.message : "Failed to process file upload";
     return NextResponse.json({ error: `Upload failed: ${message}` }, { status: 500 });
   }
 }
