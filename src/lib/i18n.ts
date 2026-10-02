@@ -35,6 +35,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     top_creators: "Top creators",
     legal_terms: "Terms of Service",
     legal_privacy: "Privacy Policy",
+    footer_explore: "Explore",
+    footer_legal: "Legal & Policy",
   },
   es: {
     nav_learn: "Aprender",
@@ -57,6 +59,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     top_creators: "Creadores destacados",
     legal_terms: "Términos de Servicio",
     legal_privacy: "Política de Privacidad",
+    footer_explore: "Explorar",
+    footer_legal: "Legal y Políticas",
   },
   fr: {
     nav_learn: "Apprendre",
@@ -79,6 +83,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     top_creators: "Meilleurs créateurs",
     legal_terms: "Conditions d'utilisation",
     legal_privacy: "Politique de confidentialité",
+    footer_explore: "Explorer",
+    footer_legal: "Mentions légales",
   },
   hi: {
     nav_learn: "सीखें",
@@ -101,5 +107,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     top_creators: "शीर्ष क्रिएटर",
     legal_terms: "सेवा की शर्तें",
     legal_privacy: "गोपनीयता नीति",
+    footer_explore: "एक्सप्लोर करें",
+    footer_legal: "कानूनी और नीतियाँ",
   },
 };

@@ -158,7 +158,7 @@ export default async function HomePage() {
               border: "1px solid var(--line)",
               borderRadius: "var(--radius-lg)",
               background: "var(--paper)",
-              padding: "44px 40px",
+              padding: "clamp(24px, 4vw, 44px) clamp(20px, 3.5vw, 40px)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",

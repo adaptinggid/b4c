@@ -92,8 +92,7 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
       {mobileMenuOpen && (
         <div className="mobile-drawer">
           <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--ink-soft)" }}>Language:</span>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 6 }}>
               <LanguageSwitcher />
             </div>
 
