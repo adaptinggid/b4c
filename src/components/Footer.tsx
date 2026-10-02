@@ -42,7 +42,6 @@ export function Footer() {
               <a href={BITEDU_TIKTOK} target="_blank" rel="noopener noreferrer">
                 TikTok ↗
               </a>
-              <Link href="/admin">Admin</Link>
             </div>
           </div>
         </div>
