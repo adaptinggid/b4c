@@ -17,7 +17,7 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
   const [error, setError] = useState("");
   const [invoice, setInvoice] = useState("");
   const [copied, setCopied] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [payInitiated, setPayInitiated] = useState(false);
 
   if (!isOpen) return null;
 
@@ -25,7 +25,8 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
     if (e) e.preventDefault();
     setError("");
     setInvoice("");
-    setSuccess(false);
+    setCopied(false);
+    setPayInitiated(false);
 
     const amount = Number(sats);
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -50,14 +51,14 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
 
       setInvoice(data.pr);
 
-      // WebLN auto-pay attempt if available in browser/wallet extension
+      // WebLN auto-pay attempt if available in browser extension
       if (typeof window !== "undefined" && (window as any).webln) {
         try {
           await (window as any).webln.enable();
           await (window as any).webln.sendPayment(data.pr);
-          setSuccess(true);
+          setPayInitiated(true);
         } catch {
-          // WebLN payment cancelled or unavailable — user can use copy or QR code
+          // WebLN payment user cancelled or unhandled — user can still copy/scan
         }
       }
     } catch (err: unknown) {
@@ -71,16 +72,20 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
     try {
       await navigator.clipboard.writeText(invoice);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard fallback
     }
   }
 
-  function handleReset() {
+  function handlePayClick() {
+    setPayInitiated(true);
+  }
+
+  function handleZapAgain() {
     setError("");
     setInvoice("");
-    setSuccess(false);
+    setCopied(false);
+    setPayInitiated(false);
     setLoading(false);
   }
 
@@ -98,7 +103,7 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
         alignItems: "center",
         justifyContent: "center",
         padding: 16,
-        background: "rgba(28, 23, 18, 0.65)",
+        background: "rgba(28, 23, 18, 0.72)",
         backdropFilter: "blur(6px)",
       }}
       onClick={onClose}
@@ -110,9 +115,11 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
           maxWidth: 480,
           background: "var(--paper, #FFFDF8)",
           borderRadius: 8,
-          padding: "28px 24px",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
+          padding: "26px 24px",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
           position: "relative",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -140,39 +147,53 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
             Zap {creatorName ? creatorName : "Creator"}
           </h3>
         </div>
-        <p style={{ fontSize: ".86rem", color: "var(--ink-soft)", marginBottom: 18 }}>
+        <p style={{ fontSize: ".86rem", color: "var(--ink-soft)", marginBottom: 16 }}>
           Direct peer-to-peer Lightning payout to <code style={{ fontSize: ".82rem", background: "var(--cream-2)", padding: "2px 6px", borderRadius: 4 }}>{lightningAddress}</code>
         </p>
 
         {error && <p className="error-text" style={{ fontSize: ".85rem", marginBottom: 14 }}>{error}</p>}
 
-        {success ? (
-          <div style={{ textAlign: "center", padding: "16px 0" }}>
-            <div style={{ fontSize: "3rem", marginBottom: 8 }}>⚡🎉</div>
-            <h4 style={{ fontSize: "1.2rem", marginBottom: 6 }}>Zap Sent Successfully!</h4>
-            <p style={{ fontSize: ".9rem", color: "var(--ink-soft)", marginBottom: 18 }}>
-              Thank you for supporting this creator directly on the Lightning Network.
-            </p>
-            <button type="button" className="btn btn-primary btn-block" onClick={onClose}>
-              Done
-            </button>
-          </div>
-        ) : invoice ? (
+        {invoice ? (
           <div>
+            {(copied || payInitiated) && (
+              <div
+                style={{
+                  background: "#EEF1E4",
+                  border: "1px solid #C9D2B4",
+                  color: "var(--ok)",
+                  padding: "10px 14px",
+                  borderRadius: 4,
+                  fontSize: ".85rem",
+                  marginBottom: 14,
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}
+              >
+                {copied ? "✓ Invoice Copied! Ready to pay in your wallet." : "✓ Payment link opened! Complete in your wallet."}
+              </div>
+            )}
+
             <div style={{ textAlign: "center", marginBottom: 14 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrSrc} alt="Lightning QR Code" width={180} height={180} style={{ borderRadius: 6, border: "1px solid var(--line)" }} />
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
               <a
                 href={`lightning:${invoice}`}
                 className="btn btn-primary btn-block"
-                style={{ flex: 1, textDecoration: "none", textAlign: "center" }}
-                onClick={() => setSuccess(true)}
+                style={{ textDecoration: "none", textAlign: "center" }}
+                onClick={handlePayClick}
               >
                 ⚡ Pay with Lightning Wallet
               </a>
+              <button
+                type="button"
+                className="btn btn-outline btn-block"
+                onClick={copyInvoice}
+              >
+                {copied ? "✓ Invoice Copied!" : "📋 Copy Lightning Invoice"}
+              </button>
             </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -180,19 +201,21 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
                 className="input"
                 readOnly
                 value={invoice}
-                style={{ fontSize: ".76rem", fontFamily: "monospace", flex: 1 }}
+                style={{ fontSize: ".74rem", fontFamily: "monospace", flex: 1 }}
               />
-              <button type="button" className="btn btn-outline btn-sm" onClick={copyInvoice}>
-                {copied ? "Copied ✓" : "Copy"}
-              </button>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={handleReset}>
-                ← Change amount
+            <div style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", borderTop: "1px solid var(--line-soft)", paddingTop: 14 }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleZapAgain}
+                style={{ background: "var(--ink)", color: "var(--cream)" }}
+              >
+                ⚡ Zap Again
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-                Close
+                Done / Close
               </button>
             </div>
           </div>

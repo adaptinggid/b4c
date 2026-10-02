@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { projectsWithXp, creatorsWithXp } from "@/lib/data";
 import { ProjectCard } from "@/components/ProjectCard";
+import { SafeImage } from "@/components/SafeImage";
 import { CATEGORIES, REGISTER_LINK } from "@/lib/constants";
 
 export default async function HomePage() {
@@ -122,14 +123,17 @@ export default async function HomePage() {
                 creators.map((c, i) => (
                   <div className="rank-row" key={c.id}>
                     <span className="rank-num">{String(i + 1).padStart(2, "0")}</span>
-                    {c.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.photoUrl} className="avatar" style={{ width: 40, height: 40 }} alt="" />
-                    ) : (
-                      <div className="avatar avatar-fallback" style={{ width: 40, height: 40 }}>
-                        {c.displayName.charAt(0)}
-                      </div>
-                    )}
+                    <SafeImage
+                      src={c.photoUrl}
+                      alt={c.displayName}
+                      className="avatar"
+                      style={{ width: 40, height: 40 }}
+                      fallback={
+                        <div className="avatar avatar-fallback" style={{ width: 40, height: 40 }}>
+                          {c.displayName.charAt(0)}
+                        </div>
+                      }
+                    />
                     <div style={{ flex: 1 }}>
                       <Link href={`/profile/${c.id}`} style={{ fontWeight: 600, fontSize: ".92rem" }}>
                         {c.displayName}

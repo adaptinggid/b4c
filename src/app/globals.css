@@ -63,9 +63,13 @@ input,textarea,select{font-family:inherit;font-size:1em;}
 .nav-actions{display:flex;align-items:center;gap:10px;}
 .nav-profile-btn{display:inline-flex;align-items:center;gap:6px;}
 
+.mobile-menu-toggle{display:none;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--ink);padding:6px 10px;border-radius:var(--radius);}
+.mobile-drawer{padding:16px 20px 24px;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:0 10px 20px rgba(0,0,0,0.08);}
+
 @media(max-width:900px){
   .nav-links{display:none;}
   .nav-actions .hide-mobile{display:none;}
+  .mobile-menu-toggle{display:inline-flex;align-items:center;justify-content:center;}
 }
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:var(--radius);border:1px solid transparent;font-size:.92rem;font-weight:600;letter-spacing:.01em;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;min-height:42px;}
