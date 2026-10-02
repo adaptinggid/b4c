@@ -37,31 +37,33 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       orderBy: { createdAt: "desc" },
     });
     content = projects.length ? (
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Creator</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>XP</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {projects.map((p) => (
-            <ProjectRow
-              key={p.id}
-              id={p.id}
-              title={p.title}
-              creatorName={p.creator.displayName}
-              category={p.category}
-              status={p.status}
-              xp={p.xpTransactions.reduce((s, t) => s + t.amount, 0)}
-            />
-          ))}
-        </tbody>
-      </table>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Creator</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>XP</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p) => (
+              <ProjectRow
+                key={p.id}
+                id={p.id}
+                title={p.title}
+                creatorName={p.creator.displayName}
+                category={p.category}
+                status={p.status}
+                xp={p.xpTransactions.reduce((s, t) => s + t.amount, 0)}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     ) : (
       <div className="empty">
         <h4>No projects yet</h4>
@@ -74,31 +76,33 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       orderBy: { createdAt: "desc" },
     });
     content = creators.length ? (
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Participant</th>
-            <th>XP</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {creators.map((c) => (
-            <CreatorRow
-              key={c.id}
-              id={c.id}
-              name={c.displayName}
-              category={c.category}
-              status={c.status}
-              participant={c.participant}
-              xp={c.projects.reduce((s, p) => s + p.xpTransactions.reduce((s2, t) => s2 + t.amount, 0), 0)}
-            />
-          ))}
-        </tbody>
-      </table>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Participant</th>
+              <th>XP</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {creators.map((c) => (
+              <CreatorRow
+                key={c.id}
+                id={c.id}
+                name={c.displayName}
+                category={c.category}
+                status={c.status}
+                participant={c.participant}
+                xp={c.projects.reduce((s, p) => s + p.xpTransactions.reduce((s2, t) => s2 + t.amount, 0), 0)}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     ) : (
       <div className="empty">
         <h4>No creators yet</h4>
@@ -112,21 +116,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       take: 100,
     });
     content = xps.length ? (
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Project</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {xps.map((t) => (
-            <XPRow key={t.id} id={t.id} projectTitle={t.project.title} amount={t.amount} date={t.createdAt.toISOString()} />
-          ))}
-        </tbody>
-      </table>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {xps.map((t) => (
+              <XPRow key={t.id} id={t.id} projectTitle={t.project.title} amount={t.amount} date={t.createdAt.toISOString()} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     ) : (
       <div className="empty">
         <h4>No XP transactions yet</h4>

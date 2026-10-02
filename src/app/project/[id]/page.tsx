@@ -178,7 +178,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="side-card">
               <h4 style={{ fontSize: ".92rem", marginBottom: 6 }}>⚡ Support this creator</h4>
-              <LightningBox address={project.creator.lightningAddress} />
+              <LightningBox address={project.creator.lightningAddress} creatorName={project.creator.displayName} />
             </div>
           </div>
         </div>

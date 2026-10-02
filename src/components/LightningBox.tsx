@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { ZapButton } from "./ZapButton";
 
-export function LightningBox({ address }: { address: string }) {
+export function LightningBox({ address, creatorName }: { address: string; creatorName?: string }) {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
@@ -12,7 +13,7 @@ export function LightningBox({ address }: { address: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // clipboard may be unavailable — the address is still selectable text
+      // clipboard fallback
     }
   }
 
@@ -21,7 +22,9 @@ export function LightningBox({ address }: { address: string }) {
   )}`;
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <ZapButton lightningAddress={address} creatorName={creatorName} size="block" buttonText="⚡ Zap Creator" />
+
       <div className="lightning-box">
         <span style={{ color: "var(--orange)" }}>⚡</span>
         <span className="lightning-addr">{address}</span>
@@ -32,10 +35,11 @@ export function LightningBox({ address }: { address: string }) {
           QR
         </button>
       </div>
+
       {showQR && (
-        <div style={{ marginTop: 12, background: "#fff", padding: 12, borderRadius: 4, display: "inline-block" }}>
+        <div style={{ background: "#fff", padding: 12, borderRadius: 4, textAlign: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrSrc} alt={`QR code for ${address}`} width={160} height={160} />
+          <img src={qrSrc} alt={`QR code for ${address}`} width={160} height={160} style={{ margin: "0 auto" }} />
         </div>
       )}
     </div>

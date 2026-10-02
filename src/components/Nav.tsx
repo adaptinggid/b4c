@@ -2,12 +2,16 @@ import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Mark } from "./Mark";
+import { SafeImage } from "./SafeImage";
 import { REGISTER_LINK } from "@/lib/constants";
 
 export async function Nav() {
   const session = await auth();
   const myProfile = session?.user
-    ? await prisma.creatorProfile.findUnique({ where: { userId: session.user.id }, select: { id: true } })
+    ? await prisma.creatorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true, displayName: true, photoUrl: true },
+      })
     : null;
 
   return (
@@ -31,8 +35,22 @@ export async function Nav() {
         <div className="nav-actions">
           {session?.user ? (
             <>
-              <Link href={myProfile ? `/profile/${myProfile.id}` : "/create"} className="btn btn-ghost btn-sm hide-mobile">
-                My profile
+              <Link
+                href={myProfile ? `/profile/${myProfile.id}` : "/create"}
+                className="btn btn-ghost btn-sm nav-profile-btn"
+                title="View your creator profile"
+              >
+                {myProfile?.photoUrl ? (
+                  <SafeImage
+                    src={myProfile.photoUrl}
+                    alt=""
+                    className="avatar"
+                    style={{ width: 22, height: 22, border: "none" }}
+                  />
+                ) : (
+                  <span style={{ fontSize: "1rem" }}>👤</span>
+                )}
+                <span>My profile</span>
               </Link>
               <form
                 action={async () => {
@@ -44,7 +62,7 @@ export async function Nav() {
               </form>
             </>
           ) : (
-            <Link href="/signin" className="btn btn-ghost btn-sm hide-mobile">
+            <Link href="/signin" className="btn btn-ghost btn-sm">
               Sign in
             </Link>
           )}

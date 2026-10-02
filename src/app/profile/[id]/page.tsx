@@ -115,7 +115,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
           </div>
           <div className="side-card" style={{ width: 260, flex: "0 0 auto" }}>
             <h4 style={{ fontSize: ".9rem", marginBottom: 6 }}>⚡ Support this creator</h4>
-            <LightningBox address={creator.lightningAddress} />
+            <LightningBox address={creator.lightningAddress} creatorName={creator.displayName} />
           </div>
         </div>
 
