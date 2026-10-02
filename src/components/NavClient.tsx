@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Mark } from "./Mark";
 import { SafeImage } from "./SafeImage";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useLanguage } from "./LanguageContext";
 import { REGISTER_LINK } from "@/lib/constants";
 
 interface NavClientProps {
@@ -14,6 +16,7 @@ interface NavClientProps {
 
 export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <div className="nav">
@@ -28,16 +31,18 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
 
         {/* Desktop Links */}
         <nav className="nav-links">
-          <Link href="/learn">Learn</Link>
-          <Link href="/create">Create</Link>
-          <Link href="/discover">Collaborate</Link>
-          <Link href="/about">About</Link>
-          <Link href="/support">Support</Link>
+          <Link href="/learn">{t("nav_learn")}</Link>
+          <Link href="/create">{t("nav_create")}</Link>
+          <Link href="/discover">{t("nav_collaborate")}</Link>
+          <Link href="/about">{t("nav_about")}</Link>
+          <Link href="/support">{t("nav_support")}</Link>
           {user?.role === "ADMIN" && <Link href="/admin">Admin</Link>}
         </nav>
 
         {/* Header Actions */}
         <div className="nav-actions">
+          <LanguageSwitcher className="hide-mobile" />
+
           {user ? (
             <>
               <Link
@@ -55,20 +60,20 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
                 ) : (
                   <span style={{ fontSize: "1rem" }}>👤</span>
                 )}
-                <span>My profile</span>
+                <span>{t("nav_my_profile")}</span>
               </Link>
               <form action={signOutAction} className="hide-mobile">
-                <button type="submit" className="btn btn-ghost btn-sm">Sign out</button>
+                <button type="submit" className="btn btn-ghost btn-sm">{t("nav_sign_out")}</button>
               </form>
             </>
           ) : (
             <Link href="/signin" className="btn btn-ghost btn-sm hide-mobile">
-              Sign in
+              {t("nav_sign_in")}
             </Link>
           )}
 
           <a href={REGISTER_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm hide-mobile">
-            Join B4C
+            {t("nav_join")}
           </a>
 
           {/* Mobile Menu Toggle Button */}
@@ -87,20 +92,25 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
       {mobileMenuOpen && (
         <div className="mobile-drawer">
           <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--ink-soft)" }}>Language:</span>
+              <LanguageSwitcher />
+            </div>
+
             <Link href="/learn" onClick={() => setMobileMenuOpen(false)}>
-              Learn
+              {t("nav_learn")}
             </Link>
             <Link href="/create" onClick={() => setMobileMenuOpen(false)}>
-              Create
+              {t("nav_create")}
             </Link>
             <Link href="/discover" onClick={() => setMobileMenuOpen(false)}>
-              Collaborate
+              {t("nav_collaborate")}
             </Link>
             <Link href="/about" onClick={() => setMobileMenuOpen(false)}>
-              About
+              {t("nav_about")}
             </Link>
             <Link href="/support" onClick={() => setMobileMenuOpen(false)}>
-              Support
+              {t("nav_support")}
             </Link>
             {user?.role === "ADMIN" && (
               <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
@@ -118,11 +128,11 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
                   style={{ justifyContent: "flex-start" }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  👤 My Profile
+                  👤 {t("nav_my_profile")}
                 </Link>
                 <form action={signOutAction}>
                   <button type="submit" className="btn btn-ghost btn-block" style={{ justifyContent: "flex-start" }}>
-                    Sign out
+                    {t("nav_sign_out")}
                   </button>
                 </form>
               </>
@@ -133,7 +143,7 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
                 style={{ justifyContent: "flex-start" }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Sign in
+                {t("nav_sign_in")}
               </Link>
             )}
 
@@ -144,7 +154,7 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
               className="btn btn-primary btn-block"
               style={{ textAlign: "center", marginTop: 6 }}
             >
-              Join B4C ↗
+              {t("nav_join")} ↗
             </a>
           </nav>
         </div>

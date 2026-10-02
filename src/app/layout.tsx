@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+import { LanguageProvider } from "@/components/LanguageContext";
 
 export const metadata: Metadata = {
   title: "Bitcoin for Creatives (B4C)",
@@ -13,9 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <Nav />
-        {children}
-        <Footer />
+        <LanguageProvider>
+          <Nav />
+          <main style={{ minHeight: "calc(100vh - 200px)" }}>{children}</main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   );

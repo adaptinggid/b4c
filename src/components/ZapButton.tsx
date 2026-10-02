@@ -7,6 +7,7 @@ interface ZapButtonProps {
   lightningAddress: string;
   creatorName?: string;
   buttonText?: string;
+  type?: "creator" | "work";
   className?: string;
   variant?: "primary" | "outline" | "ghost";
   size?: "normal" | "sm" | "block";
@@ -15,7 +16,8 @@ interface ZapButtonProps {
 export function ZapButton({
   lightningAddress,
   creatorName,
-  buttonText = "⚡ Zap Creator",
+  buttonText,
+  type = "creator",
   variant = "primary",
   size = "normal",
   className = "",
@@ -23,6 +25,9 @@ export function ZapButton({
   const [open, setOpen] = useState(false);
 
   if (!lightningAddress) return null;
+
+  const defaultText = type === "work" ? "⚡ Support Work" : "⚡ Support Creator";
+  const labelText = buttonText || defaultText;
 
   const variantClass =
     variant === "primary" ? "btn-primary" : variant === "outline" ? "btn-outline" : "btn-ghost";
@@ -39,12 +44,13 @@ export function ZapButton({
         }}
         onClick={() => setOpen(true)}
       >
-        {buttonText}
+        {labelText}
       </button>
 
       <ZapModal
         lightningAddress={lightningAddress}
         creatorName={creatorName}
+        type={type}
         isOpen={open}
         onClose={() => setOpen(false)}
       />

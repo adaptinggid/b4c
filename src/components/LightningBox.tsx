@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { ZapButton } from "./ZapButton";
 
-export function LightningBox({ address, creatorName }: { address: string; creatorName?: string }) {
+export function LightningBox({
+  address,
+  creatorName,
+  type = "creator",
+}: {
+  address: string;
+  creatorName?: string;
+  type?: "creator" | "work";
+}) {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
@@ -21,9 +29,17 @@ export function LightningBox({ address, creatorName }: { address: string; creato
     "lightning:" + address
   )}`;
 
+  const buttonText = type === "work" ? "⚡ Support Work" : "⚡ Support Creator";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <ZapButton lightningAddress={address} creatorName={creatorName} size="block" buttonText="⚡ Zap Creator" />
+      <ZapButton
+        lightningAddress={address}
+        creatorName={creatorName}
+        type={type}
+        size="block"
+        buttonText={buttonText}
+      />
 
       <div className="lightning-box">
         <span style={{ color: "var(--orange)" }}>⚡</span>

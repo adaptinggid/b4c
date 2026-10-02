@@ -5,13 +5,14 @@ import { useState } from "react";
 interface ZapModalProps {
   lightningAddress: string;
   creatorName?: string;
+  type?: "creator" | "work";
   isOpen: boolean;
   onClose: () => void;
 }
 
 const PRESET_SATS = [21, 100, 500, 1000, 5000, 21000];
 
-export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: ZapModalProps) {
+export function ZapModal({ lightningAddress, creatorName, type = "creator", isOpen, onClose }: ZapModalProps) {
   const [sats, setSats] = useState<number | "">(100);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,6 +21,8 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
   const [payInitiated, setPayInitiated] = useState(false);
 
   if (!isOpen) return null;
+
+  const titleText = type === "work" ? "Support this Work" : "Support Creator";
 
   async function handleGenerateInvoice(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -144,7 +147,7 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: "1.5rem", color: "var(--orange)" }}>⚡</span>
           <h3 style={{ fontSize: "1.35rem", margin: 0 }}>
-            Zap {creatorName ? creatorName : "Creator"}
+            {titleText} {creatorName ? `(${creatorName})` : ""}
           </h3>
         </div>
         <p style={{ fontSize: ".86rem", color: "var(--ink-soft)", marginBottom: 16 }}>
@@ -212,7 +215,7 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
                 onClick={handleZapAgain}
                 style={{ background: "var(--ink)", color: "var(--cream)" }}
               >
-                ⚡ Zap Again
+                ⚡ Support Again
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
                 Done / Close
@@ -249,7 +252,7 @@ export function ZapModal({ lightningAddress, creatorName, isOpen, onClose }: Zap
             </div>
 
             <button className="btn btn-primary btn-block" disabled={loading || !sats}>
-              {loading ? "Generating invoice…" : `⚡ Zap ${sats ? Number(sats).toLocaleString() : ""} sats`}
+              {loading ? "Generating invoice…" : `⚡ Support with ${sats ? Number(sats).toLocaleString() : ""} sats`}
             </button>
 
             <p style={{ fontSize: ".76rem", color: "var(--ink-soft)", textAlign: "center", marginTop: 10 }}>
