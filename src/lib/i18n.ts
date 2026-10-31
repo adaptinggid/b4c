@@ -16,6 +16,7 @@ export const LANGUAGES: LanguageOption[] = [
 export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   en: {
     nav_learn: "Learn",
+    nav_play: "Play",
     nav_create: "Create",
     nav_collaborate: "Collaborate",
     nav_about: "About",
@@ -40,6 +41,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   },
   es: {
     nav_learn: "Aprender",
+    nav_play: "Jugar",
     nav_create: "Crear",
     nav_collaborate: "Colaborar",
     nav_about: "Acerca de",
@@ -64,6 +66,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   },
   fr: {
     nav_learn: "Apprendre",
+    nav_play: "Jouer",
     nav_create: "Créer",
     nav_collaborate: "Collaborer",
     nav_about: "À propos",
@@ -88,6 +91,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   },
   hi: {
     nav_learn: "सीखें",
+    nav_play: "खेलें",
     nav_create: "बनाएं",
     nav_collaborate: "सहयोग करें",
     nav_about: "हमारे बारे में",

@@ -31,8 +31,11 @@ model User {
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
 
-  creatorProfile CreatorProfile?
-  xpTransactions XPTransaction[]
+  creatorProfile  CreatorProfile?
+  xpTransactions  XPTransaction[]
+  gameSessions    GameSession[]
+  gameProgress    GameProgress?
+  gameAchievements GameAchievement[]
 }
 
 model CreatorProfile {
@@ -106,4 +109,55 @@ model XPTransaction {
 
   @@unique([projectId, userId])
   @@index([projectId])
+}
+
+// ===== Word Search Game Models =====
+
+enum GameStatus {
+  PLAYING
+  COMPLETED
+  ABANDONED
+}
+
+model GameSession {
+  id             String     @id @default(cuid())
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String?
+  guestId        String?
+  levelId        Int
+  score          Int        @default(0)
+  wordsFound     String[]   @default([])
+  hintsUsed      Int        @default(0)
+  elapsedSeconds Int        @default(0)
+  status         GameStatus @default(PLAYING)
+  puzzleSeed     Int
+  completedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([levelId])
+  @@index([guestId])
+}
+
+model GameProgress {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @unique
+  completedLevels Int[]    @default([])
+  totalGamePoints Int      @default(0)
+  totalWordsFound Int      @default(0)
+  lastPlayedAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model GameAchievement {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  achievementType String
+  unlockedAt      DateTime @default(now())
+
+  @@unique([userId, achievementType])
+  @@index([userId])
 }

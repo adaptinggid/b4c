@@ -32,6 +32,7 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
         {/* Desktop Links */}
         <nav className="nav-links">
           <Link href="/learn">{t("nav_learn")}</Link>
+          <Link href="/play/word-search">{t("nav_play")}</Link>
           <Link href="/create">{t("nav_create")}</Link>
           <Link href="/discover">{t("nav_collaborate")}</Link>
           <Link href="/about">{t("nav_about")}</Link>
@@ -98,6 +99,9 @@ export function NavClient({ user, myProfile, signOutAction }: NavClientProps) {
 
             <Link href="/learn" onClick={() => setMobileMenuOpen(false)}>
               {t("nav_learn")}
+            </Link>
+            <Link href="/play/word-search" onClick={() => setMobileMenuOpen(false)}>
+              {t("nav_play")}
             </Link>
             <Link href="/create" onClick={() => setMobileMenuOpen(false)}>
               {t("nav_create")}

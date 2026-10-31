@@ -28,6 +28,7 @@ export function Footer() {
             <div className="footer-col">
               <h5>{t("footer_explore") || "Explore"}</h5>
               <Link href="/learn">{t("nav_learn")}</Link>
+              <Link href="/play/word-search">{t("nav_play")}</Link>
               <Link href="/create">{t("nav_create")}</Link>
               <Link href="/discover">{t("nav_collaborate")}</Link>
               <Link href="/about">{t("nav_about")}</Link>

@@ -1,0 +1,885 @@
+/* ===== Bitcoin Word Search — Game Styles ===== */
+/* Extends the B4C design system. Does NOT modify globals.css. */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* Game-specific tokens */
+:root {
+  --game-orange: #E87518;
+  --game-orange-deep: #C1560A;
+  --game-cream: #F8EBDD;
+  --game-charcoal: #211F20;
+  --game-beige: #E8D9C8;
+  --game-muted: #81766D;
+  --game-white: #FFFDF9;
+  --game-grid-bg: #FFFDF9;
+  --game-cell-size: 42px;
+  --game-radius: 4px;
+}
+
+/* ===== Landing Page ===== */
+
+.game-hero {
+  padding: 80px 0 56px;
+  text-align: center;
+}
+
+.game-hero-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.game-hero .eyebrow {
+  font-family: 'Space Grotesk', 'Work Sans', sans-serif;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--game-orange);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.game-hero h1 {
+  font-family: 'Space Grotesk', 'Fraunces', serif;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--game-charcoal);
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.game-hero .game-sub {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.3rem;
+  color: var(--game-orange-deep);
+  margin-bottom: 16px;
+}
+
+.game-hero .game-desc {
+  font-size: 1.08rem;
+  color: var(--game-muted);
+  max-width: 520px;
+  margin: 0 auto 28px;
+  line-height: 1.6;
+}
+
+.game-hero .cta-row {
+  justify-content: center;
+}
+
+/* Level Selection Grid */
+.game-levels-section {
+  padding: 56px 0;
+}
+
+.game-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.game-section-header h2 {
+  font-family: 'Space Grotesk', 'Fraunces', serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+  margin: 0;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.level-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color .15s, box-shadow .15s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.level-card:hover {
+  border-color: var(--game-orange);
+  box-shadow: 0 2px 12px rgba(232, 117, 24, 0.08);
+}
+
+.level-card.completed {
+  border-color: var(--ok);
+}
+
+.level-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.level-number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--game-orange);
+}
+
+.level-card h3 {
+  font-family: 'Space Grotesk', 'Fraunces', serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--game-charcoal);
+}
+
+.level-card p {
+  font-size: .88rem;
+  color: var(--game-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.level-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.level-meta-item {
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.difficulty-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.difficulty-beginner {
+  background: #EEF1E4;
+  color: var(--ok);
+}
+
+.difficulty-intermediate {
+  background: #FBF0DD;
+  color: var(--orange-deep);
+}
+
+.difficulty-advanced {
+  background: #F6E3DD;
+  color: var(--danger);
+}
+
+.level-completed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+/* How to Play Section */
+.how-to-play {
+  padding: 56px 0;
+  border-top: 1px solid var(--line);
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.how-step {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.how-step-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--game-orange);
+  letter-spacing: .08em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.how-step h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.how-step p {
+  font-size: .86rem;
+  color: var(--game-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Progress Section */
+.progress-section {
+  padding: 56px 0;
+  border-top: 1px solid var(--line);
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.progress-stat {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  text-align: center;
+}
+
+.progress-stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--game-orange);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.progress-stat-label {
+  font-size: .78rem;
+  color: var(--game-muted);
+  font-weight: 500;
+}
+
+/* ===== Game Play Interface ===== */
+
+.game-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 28px 60px;
+}
+
+@media(max-width: 640px) {
+  .game-container { padding: 12px 16px 40px; }
+}
+
+/* Game Header Bar */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.game-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.game-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .86rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.game-back-btn:hover {
+  color: var(--ink);
+}
+
+.game-header-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+}
+
+.game-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Game Stats Bar */
+.game-stats {
+  display: flex;
+  gap: 20px;
+  padding: 14px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-stat {
+  text-align: center;
+  min-width: 80px;
+}
+
+.game-stat-label {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--game-muted);
+  margin-bottom: 2px;
+}
+
+.game-stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+}
+
+.game-stat-value.accent {
+  color: var(--game-orange);
+}
+
+/* Main Game Layout */
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media(max-width: 900px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Word Grid */
+.grid-wrapper {
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.word-grid {
+  display: inline-grid;
+  gap: 2px;
+  padding: 12px;
+  background: var(--game-grid-bg);
+  border: 2px solid var(--line);
+  border-radius: var(--game-radius);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.grid-cell {
+  width: var(--game-cell-size);
+  height: var(--game-cell-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--game-charcoal);
+  background: var(--game-cream);
+  border-radius: 2px;
+  transition: background .1s, color .1s, transform .1s;
+  position: relative;
+}
+
+.grid-cell.selecting {
+  background: var(--game-orange);
+  color: var(--game-white);
+  transform: scale(1.06);
+  z-index: 2;
+}
+
+.grid-cell.found {
+  background: var(--game-beige);
+  color: var(--game-charcoal);
+}
+
+.grid-cell.found.highlight {
+  background: var(--game-orange);
+  color: var(--game-white);
+  animation: cellPulse .4s ease;
+}
+
+.grid-cell.hint-flash {
+  background: var(--amber);
+  color: var(--game-charcoal);
+  animation: hintFlash 1.2s ease;
+}
+
+@keyframes cellPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes hintFlash {
+  0% { background: var(--amber); }
+  50% { background: var(--game-orange); }
+  100% { background: var(--game-cream); }
+}
+
+.grid-cell.invalid-flash {
+  animation: invalidShake .3s ease;
+}
+
+@keyframes invalidShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Responsive grid cells */
+@media(max-width: 640px) {
+  :root { --game-cell-size: 32px; }
+  .grid-cell { font-size: .82rem; }
+}
+
+@media(max-width: 380px) {
+  :root { --game-cell-size: 26px; }
+  .grid-cell { font-size: .72rem; }
+}
+
+/* Game Sidebar */
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Word List */
+.word-list-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  padding: 18px;
+}
+
+.word-list-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--game-muted);
+  margin-bottom: 14px;
+}
+
+.word-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.word-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--game-radius);
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--game-charcoal);
+  transition: background .15s;
+}
+
+.word-item.found {
+  color: var(--game-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--game-orange);
+  text-decoration-thickness: 2px;
+}
+
+.word-item.found .word-check {
+  color: var(--game-orange);
+}
+
+.word-check {
+  font-size: .9rem;
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.word-item.found .word-check {
+  opacity: 1;
+}
+
+/* Game Controls */
+.game-controls-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-controls-card .btn {
+  width: 100%;
+  justify-content: center;
+  font-size: .84rem;
+}
+
+.hint-count {
+  font-size: .74rem;
+  color: var(--game-muted);
+  text-align: center;
+  margin-top: -4px;
+}
+
+/* Mobile word list - horizontal scroll */
+@media(max-width: 900px) {
+  .game-sidebar {
+    order: -1;
+  }
+  .word-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .word-item {
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--game-white);
+    font-size: .8rem;
+  }
+  .word-item.found {
+    background: var(--game-beige);
+    border-color: var(--game-beige);
+  }
+  .game-controls-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .game-controls-card .btn {
+    flex: 1;
+    min-width: 100px;
+  }
+}
+
+/* ===== Word Discovery Modal ===== */
+
+.discovery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(33, 31, 32, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn .2s ease;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.discovery-modal {
+  background: var(--game-white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  animation: slideUp .3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.discovery-modal .discovery-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--game-orange);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.discovery-modal h3 {
+  font-family: 'Space Grotesk', 'Fraunces', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+  margin-bottom: 12px;
+}
+
+.discovery-modal .discovery-def {
+  font-size: .92rem;
+  color: var(--game-muted);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.discovery-modal .discovery-points {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .86rem;
+  font-weight: 700;
+  color: var(--game-orange);
+  margin-bottom: 18px;
+}
+
+.discovery-modal .btn {
+  min-width: 160px;
+}
+
+/* ===== Level Completion Screen ===== */
+
+.completion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(33, 31, 32, 0.6);
+  backdrop-filter: blur(6px);
+  padding: 20px;
+  animation: fadeIn .3s ease;
+}
+
+.completion-modal {
+  background: var(--game-white);
+  border: 2px solid var(--game-orange);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  animation: slideUp .4s ease;
+}
+
+.completion-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--game-orange);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.completion-modal h2 {
+  font-family: 'Space Grotesk', 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+  margin-bottom: 8px;
+}
+
+.completion-modal .completion-desc {
+  font-size: .94rem;
+  color: var(--game-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.completion-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.completion-stat {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--game-radius);
+  background: var(--game-cream);
+}
+
+.completion-stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--game-charcoal);
+}
+
+.completion-stat-label {
+  font-size: .72rem;
+  color: var(--game-muted);
+  font-weight: 500;
+}
+
+.completion-takeaway {
+  background: var(--game-cream);
+  border: 1px solid var(--line);
+  border-radius: var(--game-radius);
+  padding: 16px;
+  margin-bottom: 24px;
+  font-size: .88rem;
+  font-style: italic;
+  color: var(--game-muted);
+  line-height: 1.5;
+}
+
+.completion-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.completion-actions .btn {
+  min-width: 140px;
+}
+
+/* ===== Confirm Dialog ===== */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(33, 31, 32, 0.4);
+  padding: 20px;
+  animation: fadeIn .15s ease;
+}
+
+.confirm-modal {
+  background: var(--game-white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+
+.confirm-modal h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.confirm-modal p {
+  font-size: .88rem;
+  color: var(--game-muted);
+  margin-bottom: 20px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ===== Loading State ===== */
+
+.game-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+}
+
+.game-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--line);
+  border-top-color: var(--game-orange);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.game-loading-text {
+  font-size: .92rem;
+  color: var(--game-muted);
+}
+
+/* ===== Responsive Adjustments ===== */
+
+@media(max-width: 640px) {
+  .game-hero { padding: 48px 0 36px; }
+  .game-hero h1 { font-size: clamp(1.8rem, 8vw, 2.8rem); }
+  .game-hero .game-sub { font-size: 1.05rem; }
+  .game-hero .game-desc { font-size: .94rem; }
+  .game-levels-section { padding: 36px 0; }
+  .game-section-header h2 { font-size: 1.4rem; }
+  .game-stats { padding: 12px 14px; gap: 14px; }
+  .game-stat { min-width: 60px; }
+  .game-stat-value { font-size: 1rem; }
+  .game-stat-label { font-size: .62rem; }
+  .discovery-modal { padding: 24px 20px; }
+  .completion-modal { padding: 28px 20px; }
+  .completion-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .completion-stat { padding: 10px; }
+  .completion-stat-value { font-size: 1.1rem; }
+  .word-grid { padding: 8px; }
+  .level-card { padding: 18px; }
+}
+
+@media(max-width: 380px) {
+  .game-hero h1 { font-size: 1.6rem; }
+  .game-stats { flex-direction: row; }
+  .completion-stats { grid-template-columns: 1fr 1fr; }
+}
