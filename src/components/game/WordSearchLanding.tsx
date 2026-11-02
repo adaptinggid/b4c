@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { GAME_LEVELS } from "@/lib/game/data";
-import { getGuestProgress } from "@/lib/game/progress";
-import type { GuestProgress } from "@/lib/game/progress";
-import "../../play/word-search/game.css";
+import { getGuestProgress, type GuestProgress } from "@/lib/game/progress";
+import "@/app/play/word-search/game.css";
 
 export function WordSearchLanding() {
   const [progress, setProgress] = useState<GuestProgress | null>(null);
