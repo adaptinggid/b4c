@@ -1,57 +1,51 @@
 import { ScoreConfig } from './types';
 
 /**
- * Default score configuration for the Bitcoin Word Search game.
+ * Default score configuration — all values in sats (satoshis).
  */
 export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
-  wordFound: 10,
-  levelComplete: 50,
-  noHintsBonus: 25,
-  dailyChallengeBonus: 100,
-  categoryCompleteBonus: 150,
+  satsPerWord: 210,
+  completionSats: 2100,
+  noHintsBonus: 1000,
+  dailyChallengeBonus: 21000,
+  categoryCompleteBonus: 5000,
+  timeBonusPerSecondSaved: 21,
 };
 
 /**
- * Calculates score earned for finding a single word.
- *
- * @param config Optional score configuration (defaults to DEFAULT_SCORE_CONFIG)
- * @returns Points awarded for finding a word
+ * Calculates sats earned for finding a single word.
  */
-export function calculateWordScore(config: ScoreConfig = DEFAULT_SCORE_CONFIG): number {
-  return config.wordFound;
+export function calculateWordScore(satsPerWord = DEFAULT_SCORE_CONFIG.satsPerWord): number {
+  return satsPerWord;
 }
 
 /**
- * Calculates the score awarded when completing a level, including the zero-hints bonus.
- *
- * @param hintsUsed Number of hints used during the level
- * @param config Optional score configuration (defaults to DEFAULT_SCORE_CONFIG)
- * @returns Total level completion points including hint bonus if applicable
+ * Calculates sats earned for completing a level, including no-hints bonus.
  */
 export function calculateLevelCompleteScore(
   hintsUsed: number,
-  config: ScoreConfig = DEFAULT_SCORE_CONFIG
+  completionSats = DEFAULT_SCORE_CONFIG.completionSats,
+  noHintsBonus = DEFAULT_SCORE_CONFIG.noHintsBonus
 ): number {
-  const baseScore = config.levelComplete;
-  const noHintsBonus = hintsUsed === 0 ? config.noHintsBonus : 0;
-  return baseScore + noHintsBonus;
+  const bonus = hintsUsed === 0 ? noHintsBonus : 0;
+  return completionSats + bonus;
 }
 
 /**
- * Calculates a time bonus if the player completes the puzzle faster than the estimated time.
- * Awards 1 point for every 2 seconds saved under the estimated duration.
- *
- * @param elapsedSeconds Actual time taken in seconds
- * @param estimatedMinutes Estimated completion duration in minutes
- * @returns Bonus points earned (0 if elapsed time >= estimated time)
+ * Calculates a time bonus if the player beats the estimated time.
+ * Awards satsPerSecondSaved sats for every second saved.
  */
-export function calculateTimeBonus(elapsedSeconds: number, estimatedMinutes: number): number {
+export function calculateTimeBonus(
+  elapsedSeconds: number,
+  estimatedMinutes: number,
+  satsPerSecondSaved = DEFAULT_SCORE_CONFIG.timeBonusPerSecondSaved
+): number {
   const estimatedSeconds = estimatedMinutes * 60;
   if (estimatedSeconds <= 0 || elapsedSeconds <= 0 || elapsedSeconds >= estimatedSeconds) {
     return 0;
   }
   const secondsSaved = estimatedSeconds - elapsedSeconds;
-  return Math.floor(secondsSaved / 2);
+  return Math.floor(secondsSaved * satsPerSecondSaved);
 }
 
 export interface CalculateTotalScoreOptions {
@@ -62,19 +56,26 @@ export interface CalculateTotalScoreOptions {
   isCompleted?: boolean;
   isDailyChallenge?: boolean;
   isCategoryComplete?: boolean;
+  satsPerWord?: number;
+  completionSats?: number;
+  noHintsBonus?: number;
   config?: ScoreConfig;
 }
 
 /**
- * Helper to calculate total cumulative game session score based on level state and bonuses.
+ * Helper to calculate total cumulative sats based on level state and bonuses.
  */
 export function calculateTotalSessionScore(options: CalculateTotalScoreOptions): number {
   const cfg = options.config || DEFAULT_SCORE_CONFIG;
-  let score = options.wordsFoundCount * calculateWordScore(cfg);
+  const satsPerWord = options.satsPerWord ?? cfg.satsPerWord;
+  const completionSats = options.completionSats ?? cfg.completionSats;
+  const noHintsBonus = options.noHintsBonus ?? cfg.noHintsBonus;
+
+  let score = options.wordsFoundCount * satsPerWord;
 
   if (options.isCompleted) {
-    score += calculateLevelCompleteScore(options.hintsUsed, cfg);
-    score += calculateTimeBonus(options.elapsedSeconds, options.estimatedMinutes);
+    score += calculateLevelCompleteScore(options.hintsUsed, completionSats, noHintsBonus);
+    score += calculateTimeBonus(options.elapsedSeconds, options.estimatedMinutes, cfg.timeBonusPerSecondSaved);
   }
 
   if (options.isDailyChallenge) {
@@ -86,4 +87,14 @@ export function calculateTotalSessionScore(options: CalculateTotalScoreOptions):
   }
 
   return score;
+}
+
+/**
+ * Format a sats value nicely (e.g. 21,000 sats → "21,000 sats")
+ */
+export function formatSats(sats: number): string {
+  if (sats >= 1_000_000) {
+    return `${(sats / 1_000_000).toFixed(2)}M sats`;
+  }
+  return `${sats.toLocaleString()} sats`;
 }

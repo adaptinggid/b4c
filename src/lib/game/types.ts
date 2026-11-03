@@ -18,18 +18,34 @@ export interface GameWord {
   resourceUrl?: string;
 }
 
-export interface GameLevel {
-  id: number;
-  slug: string;
+/** A single puzzle set within a difficulty tier */
+export interface GameSet {
+  id: string;          // e.g. 'beginner-1'
+  setNumber: number;   // 1, 2, 3, …
   title: string;
   description: string;
-  difficulty: Difficulty;
   gridSize: number;
   words: GameWord[];
   learningObjective: string;
-  allowedDirections: Direction[];
   maxHints: number;
   estimatedMinutes: number;
+  /** Sats awarded per word found */
+  satsPerWord: number;
+  /** Sats bonus for completing the set */
+  completionSats: number;
+  /** Sats bonus for finishing with no hints */
+  noHintsBonus: number;
+}
+
+/** A difficulty tier containing multiple game sets */
+export interface GameTier {
+  difficulty: Difficulty;
+  slug: string;           // e.g. 'beginner'
+  label: string;          // e.g. 'Beginner'
+  tagline: string;
+  icon: string;           // emoji icon
+  allowedDirections: Direction[];
+  sets: GameSet[];
 }
 
 export interface PlacedWord {
@@ -62,19 +78,36 @@ export interface SelectionResult {
 }
 
 export interface ScoreConfig {
-  wordFound: number;
-  levelComplete: number;
+  satsPerWord: number;
+  completionSats: number;
   noHintsBonus: number;
   dailyChallengeBonus: number;
   categoryCompleteBonus: number;
+  timeBonusPerSecondSaved: number;
 }
 
 export interface GameSessionState {
-  levelId: number;
+  tierId: Difficulty;
+  setId: string;
   foundWords: string[];
-  score: number;
+  satsEarned: number;
   hintsUsed: number;
   startTime: number;
   elapsedSeconds: number;
   status: 'playing' | 'paused' | 'completed';
+}
+
+/** Legacy support — individual level (maps to a GameSet) */
+export interface GameLevel {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  difficulty: Difficulty;
+  gridSize: number;
+  words: GameWord[];
+  learningObjective: string;
+  allowedDirections: Direction[];
+  maxHints: number;
+  estimatedMinutes: number;
 }

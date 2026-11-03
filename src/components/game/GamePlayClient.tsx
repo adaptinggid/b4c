@@ -2,13 +2,23 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { GAME_LEVELS } from "@/lib/game/data";
+import { GAME_TIERS, getSetById, setToLevel } from "@/lib/game/data";
 import { generatePuzzle } from "@/lib/game/generator";
 import { validateSelection } from "@/lib/game/validator";
-import { DEFAULT_SCORE_CONFIG, calculateWordScore, calculateLevelCompleteScore, calculateTimeBonus } from "@/lib/game/scoring";
-import { saveGuestSession, clearActiveSession, saveActiveSession, getActiveSession } from "@/lib/game/progress";
-import type { GameLevel, GeneratedPuzzle, PlacedWord, CellPosition } from "@/lib/game/types";
-import "../../app/play/word-search/game.css";
+import {
+  calculateWordScore,
+  calculateLevelCompleteScore,
+  calculateTimeBonus,
+  formatSats,
+} from "@/lib/game/scoring";
+import {
+  saveGuestSession,
+  clearActiveSession,
+  saveActiveSession,
+  getActiveSession,
+} from "@/lib/game/progress";
+import type { GeneratedPuzzle, PlacedWord, CellPosition } from "@/lib/game/types";
+import "@/app/play/word-search/game.css";
 
 interface GamePlayClientProps {
   levelSlug: string;
@@ -18,16 +28,21 @@ interface DiscoveryData {
   displayTerm: string;
   definition: string;
   category: string;
-  points: number;
+  sats: number;
 }
 
 export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
   const router = useRouter();
-  const level = GAME_LEVELS.find((l) => l.slug === levelSlug);
+
+  // Resolve set + tier
+  const found = getSetById(levelSlug);
+  const tier = found?.tier;
+  const set = found?.set;
+  const level = set && tier ? setToLevel(tier, set) : undefined;
 
   const [puzzle, setPuzzle] = useState<GeneratedPuzzle | null>(null);
   const [foundWords, setFoundWords] = useState<string[]>([]);
-  const [score, setScore] = useState(0);
+  const [satsEarned, setSatsEarned] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [status, setStatus] = useState<"playing" | "paused" | "completed">("playing");
@@ -45,6 +60,7 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
   // Modals
   const [discovery, setDiscovery] = useState<DiscoveryData | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [satsBurst, setSatsBurst] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
     message: string;
@@ -53,17 +69,13 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-
-  // All found cells (for permanent highlighting)
   const allFoundCells = useRef<Set<string>>(new Set());
 
   // Initialize puzzle
   useEffect(() => {
-    if (!level) return;
-
-    // Try to restore session
-    const saved = getActiveSession(level.id);
-    const newSeed = saved?.puzzleSeed ?? Math.floor(Math.random() * 1000000);
+    if (!level || !set) return;
+    const saved = getActiveSession(set.id);
+    const newSeed = saved?.puzzleSeed ?? Math.floor(Math.random() * 1_000_000);
     setSeed(newSeed);
 
     const generated = generatePuzzle(level, newSeed);
@@ -71,43 +83,37 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
 
     if (saved && saved.status !== "completed") {
       setFoundWords(saved.foundWords);
-      setScore(saved.score);
+      setSatsEarned(saved.satsEarned);
       setHintsUsed(saved.hintsUsed);
       setElapsedSeconds(saved.elapsedSeconds);
       setStatus(saved.status === "paused" ? "paused" : "playing");
 
-      // Rebuild found cells
       const cells = new Set<string>();
       saved.foundWords.forEach((word) => {
         const pw = generated.placedWords.find((p) => p.word === word);
-        if (pw) {
-          pw.cells.forEach((c) => cells.add(`${c.row},${c.col}`));
-        }
+        if (pw) pw.cells.forEach((c) => cells.add(`${c.row},${c.col}`));
       });
       allFoundCells.current = cells;
     }
-  }, [level]);
+  }, [level?.slug]);
 
   // Timer
   useEffect(() => {
     if (status === "playing" && puzzle) {
-      timerRef.current = setInterval(() => {
-        setElapsedSeconds((s) => s + 1);
-      }, 1000);
+      timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [status, puzzle]);
 
-  // Save session periodically
+  // Autosave
   useEffect(() => {
-    if (!level || !puzzle) return;
+    if (!set || !tier || !puzzle) return;
     const interval = setInterval(() => {
       saveActiveSession({
-        levelId: level.id,
+        setId: set.id,
+        tierId: tier.difficulty,
         foundWords,
-        score,
+        satsEarned,
         hintsUsed,
         elapsedSeconds,
         startTime: 0,
@@ -116,16 +122,14 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [level, puzzle, foundWords, score, hintsUsed, elapsedSeconds, status, seed]);
+  }, [set, tier, puzzle, foundWords, satsEarned, hintsUsed, elapsedSeconds, status, seed]);
 
-  // Format time
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  // Get cells in a straight line between two positions
   const getCellsInLine = useCallback(
     (start: CellPosition, end: CellPosition): CellPosition[] => {
       if (!puzzle) return [];
@@ -133,13 +137,9 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
       const dc = Math.sign(end.col - start.col);
       const rowDist = Math.abs(end.row - start.row);
       const colDist = Math.abs(end.col - start.col);
-
-      // Must be a straight line
       if (rowDist !== colDist && rowDist !== 0 && colDist !== 0) return [];
-
       const steps = Math.max(rowDist, colDist);
       const cells: CellPosition[] = [];
-
       for (let i = 0; i <= steps; i++) {
         const row = start.row + dr * i;
         const col = start.col + dc * i;
@@ -151,13 +151,11 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
     [puzzle]
   );
 
-  // Handle cell position from mouse/touch event
   const getCellFromEvent = useCallback(
     (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): CellPosition | null => {
       if (!gridRef.current || !puzzle) return null;
       const gridRect = gridRef.current.getBoundingClientRect();
       let clientX: number, clientY: number;
-
       if ("touches" in e) {
         if (e.touches.length === 0) return null;
         clientX = e.touches[0].clientX;
@@ -166,24 +164,19 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
         clientX = (e as MouseEvent).clientX;
         clientY = (e as MouseEvent).clientY;
       }
-
-      // Calculate cell from position within grid
-      const padding = 12; // match CSS padding
-      const gap = 2; // match CSS gap
+      const padding = 12;
+      const gap = 2;
       const cellSize = (gridRect.width - padding * 2 - gap * (puzzle.gridSize - 1)) / puzzle.gridSize;
       const x = clientX - gridRect.left - padding;
       const y = clientY - gridRect.top - padding;
-
       const col = Math.floor(x / (cellSize + gap));
       const row = Math.floor(y / (cellSize + gap));
-
       if (row < 0 || row >= puzzle.gridSize || col < 0 || col >= puzzle.gridSize) return null;
       return { row, col };
     },
     [puzzle]
   );
 
-  // Selection handlers
   const handleSelectionStart = useCallback(
     (row: number, col: number) => {
       if (status !== "playing") return;
@@ -207,7 +200,7 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
   );
 
   const handleSelectionEnd = useCallback(() => {
-    if (!isSelecting || !selectionStart || !selectionCurrent || !puzzle || !level) {
+    if (!isSelecting || !selectionStart || !selectionCurrent || !puzzle || !level || !set || !tier) {
       setIsSelecting(false);
       setSelectedCells([]);
       return;
@@ -222,39 +215,29 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
     );
 
     if (result.isValid && result.word && result.placedWord && !result.alreadyFound) {
-      // Word found!
       const wordData = level.words.find((w) => w.term === result.word);
-      const points = calculateWordScore();
+      const wordSats = calculateWordScore(set.satsPerWord);
 
       setFoundWords((prev) => [...prev, result.word!]);
-      setScore((prev) => prev + points);
+      setSatsEarned((prev) => prev + wordSats);
 
-      // Highlight found cells
       result.placedWord.cells.forEach((c) => {
         allFoundCells.current.add(`${c.row},${c.col}`);
       });
       setRecentlyFoundCells(result.placedWord.cells);
-      setTimeout(() => setRecentlyFoundCells([]), 600);
+      setSatsBurst(true);
+      setTimeout(() => { setRecentlyFoundCells([]); setSatsBurst(false); }, 800);
 
-      // Show discovery
       setDiscovery({
         displayTerm: wordData?.displayTerm || result.word,
         definition: wordData?.definition || "",
         category: wordData?.category || "",
-        points,
+        sats: wordSats,
       });
-
-      // Check completion
-      const newFoundCount = foundWords.length + 1;
-      if (newFoundCount >= level.words.length) {
-        // Will show completion after discovery is dismissed
-      }
     } else if (result.alreadyFound) {
-      // Already found - brief flash
       setInvalidCells(selectedCells);
       setTimeout(() => setInvalidCells([]), 300);
     } else {
-      // Invalid selection
       setInvalidCells(selectedCells);
       setTimeout(() => setInvalidCells([]), 300);
     }
@@ -263,214 +246,171 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
     setSelectedCells([]);
     setSelectionStart(null);
     setSelectionCurrent(null);
-  }, [isSelecting, selectionStart, selectionCurrent, puzzle, level, foundWords, selectedCells]);
+  }, [isSelecting, selectionStart, selectionCurrent, puzzle, level, set, tier, foundWords, selectedCells]);
 
-  // Mouse handlers for the grid
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      const cell = getCellFromEvent(e);
-      if (cell) handleSelectionStart(cell.row, cell.col);
-    },
-    [getCellFromEvent, handleSelectionStart]
-  );
+  // Mouse handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const cell = getCellFromEvent(e);
+    if (cell) handleSelectionStart(cell.row, cell.col);
+  }, [getCellFromEvent, handleSelectionStart]);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isSelecting) return;
-      const cell = getCellFromEvent(e);
-      if (cell) handleSelectionMove(cell.row, cell.col);
-    },
-    [isSelecting, getCellFromEvent, handleSelectionMove]
-  );
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isSelecting) return;
+    const cell = getCellFromEvent(e);
+    if (cell) handleSelectionMove(cell.row, cell.col);
+  }, [isSelecting, getCellFromEvent, handleSelectionMove]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback(() => handleSelectionEnd(), [handleSelectionEnd]);
+
+  // Touch handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const cell = getCellFromEvent(e);
+    if (cell) handleSelectionStart(cell.row, cell.col);
+  }, [getCellFromEvent, handleSelectionStart]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!isSelecting) return;
+    const cell = getCellFromEvent(e);
+    if (cell) handleSelectionMove(cell.row, cell.col);
+  }, [isSelecting, getCellFromEvent, handleSelectionMove]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
     handleSelectionEnd();
   }, [handleSelectionEnd]);
 
-  // Touch handlers
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault();
-      const cell = getCellFromEvent(e);
-      if (cell) handleSelectionStart(cell.row, cell.col);
-    },
-    [getCellFromEvent, handleSelectionStart]
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault();
-      if (!isSelecting) return;
-      const cell = getCellFromEvent(e);
-      if (cell) handleSelectionMove(cell.row, cell.col);
-    },
-    [isSelecting, getCellFromEvent, handleSelectionMove]
-  );
-
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault();
-      handleSelectionEnd();
-    },
-    [handleSelectionEnd]
-  );
-
-  // Mouse up on window (in case mouse leaves grid)
   useEffect(() => {
-    const handleWindowMouseUp = () => {
-      if (isSelecting) handleSelectionEnd();
-    };
-    window.addEventListener("mouseup", handleWindowMouseUp);
-    return () => window.removeEventListener("mouseup", handleWindowMouseUp);
+    const up = () => { if (isSelecting) handleSelectionEnd(); };
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
   }, [isSelecting, handleSelectionEnd]);
 
   // Dismiss discovery
   const dismissDiscovery = useCallback(() => {
     setDiscovery(null);
-    // Check completion after dismissing
-    if (level && foundWords.length >= level.words.length) {
-      const bonus = calculateLevelCompleteScore(hintsUsed);
-      const timeBonus = calculateTimeBonus(elapsedSeconds, level.estimatedMinutes);
-      const totalBonus = bonus + timeBonus;
-      setScore((prev) => prev + totalBonus);
+    if (!level || !set || !tier) return;
+    if (foundWords.length >= level.words.length) {
+      const bonusSats = calculateLevelCompleteScore(hintsUsed, set.completionSats, set.noHintsBonus);
+      const timeBonusSats = calculateTimeBonus(elapsedSeconds, set.estimatedMinutes);
+      const totalBonus = bonusSats + timeBonusSats;
+      const finalSats = satsEarned + totalBonus;
+      setSatsEarned(finalSats);
       setStatus("completed");
       setShowCompletion(true);
 
-      // Save
-      const finalScore = score + totalBonus;
       saveGuestSession({
-        levelId: level.id,
+        setId: set.id,
+        tierId: tier.difficulty,
         foundWords,
-        score: finalScore,
+        satsEarned: finalSats,
         hintsUsed,
         elapsedSeconds,
         status: "completed",
         puzzleSeed: seed,
         completedAt: new Date().toISOString(),
       });
-      clearActiveSession(level.id);
+      clearActiveSession(set.id);
     }
-  }, [level, foundWords, hintsUsed, elapsedSeconds, score, seed]);
+  }, [level, set, tier, foundWords, hintsUsed, elapsedSeconds, satsEarned, seed]);
 
   // Hint
   const handleHint = useCallback(() => {
-    if (!puzzle || !level || status !== "playing") return;
-    if (hintsUsed >= level.maxHints) return;
-
-    // Find an unfound word
+    if (!puzzle || !set || !level || status !== "playing") return;
+    if (hintsUsed >= set.maxHints) return;
     const unfound = puzzle.placedWords.filter((pw) => !foundWords.includes(pw.word));
     if (unfound.length === 0) return;
-
-    const targetWord = unfound[Math.floor(Math.random() * unfound.length)];
-    const firstCell = targetWord.cells[0];
-
-    setHintCells([firstCell]);
+    const target = unfound[Math.floor(Math.random() * unfound.length)];
+    setHintCells([target.cells[0]]);
     setHintsUsed((prev) => prev + 1);
-
     setTimeout(() => setHintCells([]), 1500);
-  }, [puzzle, level, status, hintsUsed, foundWords]);
+  }, [puzzle, set, level, status, hintsUsed, foundWords]);
 
-  // Pause/Resume
-  const handlePause = useCallback(() => {
-    setStatus("paused");
-  }, []);
+  const handlePause = useCallback(() => setStatus("paused"), []);
+  const handleResume = useCallback(() => setStatus("playing"), []);
 
-  const handleResume = useCallback(() => {
-    setStatus("playing");
-  }, []);
-
-  // Restart
   const handleRestart = useCallback(() => {
+    if (!level || !set) return;
     if (foundWords.length > 0) {
       setConfirmAction({
-        title: "Restart level?",
-        message: "Your current progress will be lost.",
+        title: "Restart set?",
+        message: "Your current progress on this set will be lost.",
         onConfirm: () => {
-          const newSeed = Math.floor(Math.random() * 1000000);
+          const newSeed = Math.floor(Math.random() * 1_000_000);
           setSeed(newSeed);
-          const generated = generatePuzzle(level!, newSeed);
-          setPuzzle(generated);
+          setPuzzle(generatePuzzle(level, newSeed));
           setFoundWords([]);
-          setScore(0);
+          setSatsEarned(0);
           setHintsUsed(0);
           setElapsedSeconds(0);
           setStatus("playing");
           allFoundCells.current = new Set();
           setShowCompletion(false);
-          clearActiveSession(level!.id);
+          clearActiveSession(set.id);
           setConfirmAction(null);
         },
       });
     } else {
-      const newSeed = Math.floor(Math.random() * 1000000);
+      const newSeed = Math.floor(Math.random() * 1_000_000);
       setSeed(newSeed);
-      const generated = generatePuzzle(level!, newSeed);
-      setPuzzle(generated);
+      setPuzzle(generatePuzzle(level, newSeed));
       setElapsedSeconds(0);
     }
-  }, [level, foundWords]);
+  }, [level, set, foundWords]);
 
-  // Exit
   const handleExit = useCallback(() => {
+    if (!set || !tier) { router.push("/play/word-search"); return; }
     if (foundWords.length > 0 && status !== "completed") {
       setConfirmAction({
-        title: "Exit level?",
-        message: "Your progress will be saved. You can continue later.",
+        title: "Exit set?",
+        message: "Your progress will be saved. Continue later from the same point.",
         onConfirm: () => {
-          if (level) {
-            saveActiveSession({
-              levelId: level.id,
-              foundWords,
-              score,
-              hintsUsed,
-              elapsedSeconds,
-              startTime: 0,
-              status: "paused",
-              puzzleSeed: seed,
-            });
-          }
+          saveActiveSession({
+            setId: set.id,
+            tierId: tier.difficulty,
+            foundWords,
+            satsEarned,
+            hintsUsed,
+            elapsedSeconds,
+            startTime: 0,
+            status: "paused",
+            puzzleSeed: seed,
+          });
           router.push("/play/word-search");
         },
       });
     } else {
       router.push("/play/word-search");
     }
-  }, [foundWords, status, level, score, hintsUsed, elapsedSeconds, seed, router]);
+  }, [foundWords, status, set, tier, satsEarned, hintsUsed, elapsedSeconds, seed, router]);
 
-  // Cell class name
   const getCellClassName = useCallback(
     (row: number, col: number) => {
       const classes = ["grid-cell"];
       const key = `${row},${col}`;
-
-      if (selectedCells.some((c) => c.row === row && c.col === col)) {
-        classes.push("selecting");
-      }
-      if (allFoundCells.current.has(key)) {
-        classes.push("found");
-      }
-      if (recentlyFoundCells.some((c) => c.row === row && c.col === col)) {
-        classes.push("highlight");
-      }
-      if (invalidCells.some((c) => c.row === row && c.col === col)) {
-        classes.push("invalid-flash");
-      }
-      if (hintCells.some((c) => c.row === row && c.col === col)) {
-        classes.push("hint-flash");
-      }
+      if (selectedCells.some((c) => c.row === row && c.col === col)) classes.push("selecting");
+      if (allFoundCells.current.has(key)) classes.push("found");
+      if (recentlyFoundCells.some((c) => c.row === row && c.col === col)) classes.push("highlight");
+      if (invalidCells.some((c) => c.row === row && c.col === col)) classes.push("invalid-flash");
+      if (hintCells.some((c) => c.row === row && c.col === col)) classes.push("hint-flash");
       return classes.join(" ");
     },
     [selectedCells, recentlyFoundCells, invalidCells, hintCells]
   );
 
-  // ====== RENDER ======
+  // Next set in same tier
+  const nextSet = tier && set
+    ? tier.sets.find((s) => s.setNumber === set.setNumber + 1) ?? null
+    : null;
 
-  if (!level) {
+  // ====== RENDER ======
+  if (!level || !set || !tier) {
     return (
       <div className="game-container">
         <div className="game-loading">
-          <p>Level not found.</p>
+          <p>Set not found.</p>
           <button className="btn btn-outline" onClick={() => router.push("/play/word-search")}>
             Back to levels
           </button>
@@ -490,6 +430,8 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
     );
   }
 
+  const progressPct = Math.round((foundWords.length / level.words.length) * 100);
+
   return (
     <div className="game-container">
       {/* Header */}
@@ -499,16 +441,20 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
             ← Back
           </button>
           <div>
-            <span className="level-number">Level {String(level.id).padStart(2, "0")}</span>
-            <span className="game-header-title"> {level.title}</span>
+            <span className="level-number">
+              {tier.label} · Set {String(set.setNumber).padStart(2, "0")}
+            </span>
+            <span className="game-header-title"> {set.title}</span>
           </div>
         </div>
         <div className="game-header-right">
-          <span className={`difficulty-badge difficulty-${level.difficulty}`}>{level.difficulty}</span>
+          <span className={`difficulty-badge difficulty-${tier.difficulty}`}>
+            {tier.difficulty === "beginner" ? "🟠" : tier.difficulty === "intermediate" ? "⚡" : "₿"} {tier.label}
+          </span>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Bar */}
       <div className="game-stats">
         <div className="game-stat">
           <div className="game-stat-label">Found</div>
@@ -521,15 +467,22 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
           <div className="game-stat-value">{formatTime(elapsedSeconds)}</div>
         </div>
         <div className="game-stat">
-          <div className="game-stat-label">Points</div>
-          <div className="game-stat-value accent">{score}</div>
+          <div className="game-stat-label">⚡ Sats</div>
+          <div className={`game-stat-value sats-value${satsBurst ? " sats-burst" : ""}`}>
+            {satsEarned.toLocaleString()}
+          </div>
         </div>
         <div className="game-stat">
           <div className="game-stat-label">Hints</div>
           <div className="game-stat-value">
-            {hintsUsed}/{level.maxHints}
+            {hintsUsed}/{set.maxHints}
           </div>
         </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="word-progress-track">
+        <div className="word-progress-fill" style={{ width: `${progressPct}%` }} />
       </div>
 
       {/* Game Layout */}
@@ -578,7 +531,7 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
                 return (
                   <div key={word.term} className={`word-item${isFound ? " found" : ""}`}>
                     <span>{word.displayTerm}</span>
-                    <span className="word-check">✓</span>
+                    {isFound && <span className="word-check">⚡</span>}
                   </div>
                 );
               })}
@@ -590,28 +543,36 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
             <button
               className="btn btn-primary btn-sm"
               onClick={handleHint}
-              disabled={hintsUsed >= level.maxHints || status !== "playing"}
+              disabled={hintsUsed >= set.maxHints || status !== "playing"}
             >
               💡 Hint
             </button>
             <span className="hint-count">
-              {level.maxHints - hintsUsed} hints remaining
+              {set.maxHints - hintsUsed} hints remaining
             </span>
             {status === "playing" ? (
-              <button className="btn btn-ghost btn-sm" onClick={handlePause}>
-                ⏸ Pause
-              </button>
+              <button className="btn btn-ghost btn-sm" onClick={handlePause}>⏸ Pause</button>
             ) : status === "paused" ? (
-              <button className="btn btn-primary btn-sm" onClick={handleResume}>
-                ▶ Resume
-              </button>
+              <button className="btn btn-primary btn-sm" onClick={handleResume}>▶ Resume</button>
             ) : null}
-            <button className="btn btn-ghost btn-sm" onClick={handleRestart}>
-              ↻ Restart
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleExit}>
-              ✕ Exit
-            </button>
+            <button className="btn btn-ghost btn-sm" onClick={handleRestart}>↻ Restart</button>
+            <button className="btn btn-ghost btn-sm" onClick={handleExit}>✕ Exit</button>
+          </div>
+
+          {/* Sats reward info */}
+          <div className="sats-info-card">
+            <div className="sats-info-row">
+              <span>Per word</span>
+              <span>⚡ {set.satsPerWord.toLocaleString()} sats</span>
+            </div>
+            <div className="sats-info-row">
+              <span>Completion</span>
+              <span>⚡ {set.completionSats.toLocaleString()} sats</span>
+            </div>
+            <div className="sats-info-row">
+              <span>No hints bonus</span>
+              <span>⚡ {set.noHintsBonus.toLocaleString()} sats</span>
+            </div>
           </div>
         </div>
       </div>
@@ -620,14 +581,11 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
       {status === "paused" && (
         <div className="discovery-overlay" onClick={handleResume}>
           <div className="discovery-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pause-icon">⏸</div>
             <span className="discovery-label">Game Paused</span>
             <h3>Take a break</h3>
-            <p className="discovery-def">
-              The grid is hidden while paused. Your progress is saved.
-            </p>
-            <button className="btn btn-primary" onClick={handleResume}>
-              ▶ Resume
-            </button>
+            <p className="discovery-def">The grid is hidden while paused. Your progress is saved.</p>
+            <button className="btn btn-primary" onClick={handleResume}>▶ Resume</button>
           </div>
         </div>
       )}
@@ -636,13 +594,15 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
       {discovery && (
         <div className="discovery-overlay" onClick={dismissDiscovery}>
           <div className="discovery-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="discovery-label">Word Discovered!</span>
+            <span className="discovery-label">₿ Word Discovered!</span>
             <h3>{discovery.displayTerm}</h3>
+            <div className="discovery-category">{discovery.category}</div>
             <p className="discovery-def">{discovery.definition}</p>
-            <div className="discovery-points">+{discovery.points} game points</div>
-            <button className="btn btn-primary" onClick={dismissDiscovery}>
-              Continue
-            </button>
+            <div className="discovery-sats">
+              <span className="discovery-sats-icon">⚡</span>
+              +{discovery.sats.toLocaleString()} sats
+            </div>
+            <button className="btn btn-primary" onClick={dismissDiscovery}>Continue</button>
           </div>
         </div>
       )}
@@ -651,15 +611,19 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
       {showCompletion && (
         <div className="completion-overlay">
           <div className="completion-modal">
-            <span className="completion-label">Level Completed!</span>
-            <h2>Well done!</h2>
-            <p className="completion-desc">{level.learningObjective}</p>
+            <div className="completion-emoji">₿</div>
+            <span className="completion-label">Set Completed!</span>
+            <h2>Stack complete! 🎉</h2>
+            <p className="completion-desc">{set.learningObjective}</p>
+
+            <div className="completion-sats-hero">
+              <div className="completion-sats-label">⚡ Sats Earned</div>
+              <div className="completion-sats-value">{satsEarned.toLocaleString()}</div>
+            </div>
 
             <div className="completion-stats">
               <div className="completion-stat">
-                <div className="completion-stat-value">
-                  {foundWords.length}/{level.words.length}
-                </div>
+                <div className="completion-stat-value">{foundWords.length}/{level.words.length}</div>
                 <div className="completion-stat-label">Words found</div>
               </div>
               <div className="completion-stat">
@@ -667,34 +631,27 @@ export function GamePlayClient({ levelSlug }: GamePlayClientProps) {
                 <div className="completion-stat-label">Time</div>
               </div>
               <div className="completion-stat">
-                <div className="completion-stat-value">{score}</div>
-                <div className="completion-stat-label">Points</div>
-              </div>
-              <div className="completion-stat">
                 <div className="completion-stat-value">{hintsUsed}</div>
                 <div className="completion-stat-label">Hints used</div>
               </div>
-            </div>
-
-            <div className="completion-takeaway">
-              &ldquo;{level.learningObjective}&rdquo;
+              <div className="completion-stat">
+                <div className="completion-stat-value">
+                  {hintsUsed === 0 ? "✓" : "—"}
+                </div>
+                <div className="completion-stat-label">No-hints bonus</div>
+              </div>
             </div>
 
             <div className="completion-actions">
-              {GAME_LEVELS.find((l) => l.id === level.id + 1) && (
+              {nextSet && (
                 <button
                   className="btn btn-primary"
-                  onClick={() => {
-                    const next = GAME_LEVELS.find((l) => l.id === level.id + 1);
-                    if (next) router.push(`/play/word-search/${next.slug}`);
-                  }}
+                  onClick={() => router.push(`/play/word-search/${nextSet.id}`)}
                 >
-                  Next Level →
+                  Next Set →
                 </button>
               )}
-              <button className="btn btn-outline" onClick={handleRestart}>
-                Play Again
-              </button>
+              <button className="btn btn-outline" onClick={handleRestart}>Play Again</button>
               <button
                 className="btn btn-ghost"
                 onClick={() => router.push("/play/word-search")}

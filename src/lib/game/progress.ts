@@ -4,34 +4,38 @@
  * - Registered users: API + localStorage cache
  */
 
-import type { GameSessionState } from "./types";
+import type { Difficulty } from './types';
 
-const STORAGE_KEY = "b4c_word_search_progress";
-const SESSION_KEY = "b4c_word_search_session";
+const STORAGE_KEY = 'b4c_word_search_progress_v2';
+const SESSION_KEY = 'b4c_word_search_session_v2';
 
 // ---------- Guest (localStorage) ----------
 
 export interface GuestProgress {
-  completedLevels: number[];
-  totalGamePoints: number;
+  /** Set IDs that have been completed */
+  completedSets: string[];
+  /** Total sats earned across all sessions */
+  totalSats: number;
+  /** Total words found across all sessions */
   totalWordsFound: number;
   lastPlayedAt: string;
-  sessions: Record<number, SavedSession>;
+  sessions: Record<string, SavedSession>;
 }
 
 export interface SavedSession {
-  levelId: number;
+  setId: string;
+  tierId: Difficulty;
   foundWords: string[];
-  score: number;
+  satsEarned: number;
   hintsUsed: number;
   elapsedSeconds: number;
-  status: "playing" | "paused" | "completed";
+  status: 'playing' | 'paused' | 'completed';
   puzzleSeed: number;
   completedAt?: string;
 }
 
 function getStorage(): GuestProgress {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return defaultProgress();
   }
   try {
@@ -44,7 +48,7 @@ function getStorage(): GuestProgress {
 }
 
 function setStorage(data: GuestProgress) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -54,8 +58,8 @@ function setStorage(data: GuestProgress) {
 
 function defaultProgress(): GuestProgress {
   return {
-    completedLevels: [],
-    totalGamePoints: 0,
+    completedSets: [],
+    totalSats: 0,
     totalWordsFound: 0,
     lastPlayedAt: new Date().toISOString(),
     sessions: {},
@@ -68,46 +72,58 @@ export function getGuestProgress(): GuestProgress {
 
 export function saveGuestSession(session: SavedSession): void {
   const progress = getStorage();
-  progress.sessions[session.levelId] = session;
+  progress.sessions[session.setId] = session;
   progress.lastPlayedAt = new Date().toISOString();
 
-  if (session.status === "completed") {
-    if (!progress.completedLevels.includes(session.levelId)) {
-      progress.completedLevels.push(session.levelId);
+  if (session.status === 'completed') {
+    if (!progress.completedSets.includes(session.setId)) {
+      progress.completedSets.push(session.setId);
+      progress.totalSats += session.satsEarned;
+      progress.totalWordsFound += session.foundWords.length;
     }
-    progress.totalGamePoints += session.score;
-    progress.totalWordsFound += session.foundWords.length;
   }
 
   setStorage(progress);
 }
 
-export function getGuestSession(levelId: number): SavedSession | null {
+export function getGuestSession(setId: string): SavedSession | null {
   const progress = getStorage();
-  return progress.sessions[levelId] || null;
+  return progress.sessions[setId] || null;
 }
 
-export function clearGuestSession(levelId: number): void {
+export function clearGuestSession(setId: string): void {
   const progress = getStorage();
-  delete progress.sessions[levelId];
+  delete progress.sessions[setId];
   setStorage(progress);
 }
 
-// ---------- Active session (in-memory backup to sessionStorage) ----------
+// ---------- Active session (sessionStorage) ----------
 
-export function saveActiveSession(state: GameSessionState & { puzzleSeed: number }): void {
-  if (typeof window === "undefined") return;
+export interface ActiveSessionState {
+  setId: string;
+  tierId: Difficulty;
+  foundWords: string[];
+  satsEarned: number;
+  hintsUsed: number;
+  startTime: number;
+  elapsedSeconds: number;
+  status: 'playing' | 'paused' | 'completed';
+  puzzleSeed: number;
+}
+
+export function saveActiveSession(state: ActiveSessionState): void {
+  if (typeof window === 'undefined') return;
   try {
-    sessionStorage.setItem(SESSION_KEY + "_" + state.levelId, JSON.stringify(state));
+    sessionStorage.setItem(SESSION_KEY + '_' + state.setId, JSON.stringify(state));
   } catch {
     // ignore
   }
 }
 
-export function getActiveSession(levelId: number): (GameSessionState & { puzzleSeed: number }) | null {
-  if (typeof window === "undefined") return null;
+export function getActiveSession(setId: string): ActiveSessionState | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY + "_" + levelId);
+    const raw = sessionStorage.getItem(SESSION_KEY + '_' + setId);
     if (raw) return JSON.parse(raw);
   } catch {
     // ignore
@@ -115,11 +131,36 @@ export function getActiveSession(levelId: number): (GameSessionState & { puzzleS
   return null;
 }
 
-export function clearActiveSession(levelId: number): void {
-  if (typeof window === "undefined") return;
+export function clearActiveSession(setId: string): void {
+  if (typeof window === 'undefined') return;
   try {
-    sessionStorage.removeItem(SESSION_KEY + "_" + levelId);
+    sessionStorage.removeItem(SESSION_KEY + '_' + setId);
   } catch {
     // ignore
   }
+}
+
+// ---------- Legacy shim for old code referencing levelId numbers ----------
+
+export function saveGuestSession_legacy(session: {
+  levelId: number;
+  foundWords: string[];
+  score: number;
+  hintsUsed: number;
+  elapsedSeconds: number;
+  status: 'playing' | 'paused' | 'completed';
+  puzzleSeed: number;
+  completedAt?: string;
+}): void {
+  saveGuestSession({
+    setId: String(session.levelId),
+    tierId: 'beginner',
+    foundWords: session.foundWords,
+    satsEarned: session.score,
+    hintsUsed: session.hintsUsed,
+    elapsedSeconds: session.elapsedSeconds,
+    status: session.status,
+    puzzleSeed: session.puzzleSeed,
+    completedAt: session.completedAt,
+  });
 }
